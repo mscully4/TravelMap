@@ -103,7 +103,7 @@ class Manager(object):
 
     def get_archive_sequence(self):
         paginator = self.s3_client.get_paginator('list_objects_v2')
-        operation_parameters = {'Bucket': self.s3_bucket_name, 'Prefix': 'archive/'}
+        operation_parameters = {'Bucket': self.s3_bucket, 'Prefix': 'archive/'}
         page_iterator = paginator.paginate(**operation_parameters)
         versions = [int(f['Key'].lstrip('archive/').split('_')[0]) for page in page_iterator for f in page['Contents'] if int(f['Size'])]
         return max(versions) + 1
