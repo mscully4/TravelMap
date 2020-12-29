@@ -14,7 +14,7 @@ from fuzzywuzzy import fuzz
 SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
 CLIENT_SECRET_FILE = '/home/michael/Downloads/client_secret_533824499350-pb7pa1qg5m7mvf5jnin0t0t1sdruesos.apps.googleusercontent.com.json'
 
-class GooglePhotosAPI(object):
+class GooglePhotos(object):
     def __init__(self, client_secret_file, scopes):
         self.service = self.Create_Service(CLIENT_SECRET_FILE, 'photoslibrary', 'v1', SCOPES)
         self.albums = self.get_albums()
@@ -97,5 +97,5 @@ class GooglePhotosAPI(object):
 
     
 if __name__ == '__main__':
-    service = GooglePhotosAPI(CLIENT_SECRET_FILE, SCOPES)
+    service = GooglePhotos(CLIENT_SECRET_FILE, SCOPES)
     
