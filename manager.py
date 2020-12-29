@@ -689,11 +689,13 @@ class Manager(object):
 
             print()
 
-            if inp == '\\':
+            sel = input('Selection: ')
+
+            if sel == '\\':
                 u.cls()
                 return
 
-            selected_place = u.try_cast(input('Selection: '), int) - 1
+            selected_place = u.try_cast(sel, int) - 1
             assert selected_place != None
             #If the user selects 0, go back
             if selected_place == -1:
