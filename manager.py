@@ -712,6 +712,9 @@ class Manager(object):
 
         u.cls()
 
+        if self.data['destinations'][selected_city]['places'][selected_place].get('albumId', None) != None:
+            print("Album already exists for this place!")
+
         #Get album name
         album_name = input('Search for albums: ')
         #Get suggestions from Google Photos, limit to 5
