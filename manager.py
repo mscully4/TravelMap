@@ -802,7 +802,7 @@ class Manager(object):
                 'hash': md5.hexdigest()
             })
 
-            u.clr_line()
+            u.cls()
 
         self.overwrite()
         u.cls()
