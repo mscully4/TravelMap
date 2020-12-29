@@ -717,6 +717,11 @@ class Manager(object):
 
         #Get album name
         album_name = input('Search for albums: ')
+
+        if album_name == '\\':
+            u.cls()
+            return
+
         #Get suggestions from Google Photos, limit to 5
         suggestions = self.gp.get_album_suggestions(self.gp.get_albums(), album_name, 5)
 
