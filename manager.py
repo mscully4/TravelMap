@@ -28,6 +28,7 @@ class Manager(object):
 
         self.data = self.read(self.file_name)
         self.cities = [city.get('place_id') for city in self.data['destinations']]
+        self.places = [p.get('placeId') for city in self.data['destinations'] for p in city['places']]
         self.images = {city['city']: {place['name']: place['images'] for place in city['places']} for city in self.data['destinations']}
 
         self.run = True
@@ -445,28 +446,31 @@ class Manager(object):
         #Geocode the place and fill in some info
         place = self.geocode_place(ac=sugs[selection])
 
-        place['main_type'] = ''
-        place['city'] = city['city']
-        place['images'] = []
-        self.data['destinations'][selected_city]['places'].append(place) 
+        if place['placeId'] not in self.places:
+            place['main_type'] = ''
+            place['city'] = city['city']
+            place['images'] = []
+            self.data['destinations'][selected_city]['places'].append(place) 
 
-        #Allow user to edit autocomplete information
-        self.edit_place(selected_city, len(self.data['destinations'][selected_city]['places']) - 1)
+            #Allow user to edit autocomplete information
+            self.edit_place(selected_city, len(self.data['destinations'][selected_city]['places']) - 1)
         
-        search_albums = input('Search for albums? (y/n): ')
+            search_albums = input('Search for albums? (y/n): ')
 
+            u.cls()
+            
+            if search_albums.lower() == 'y':
+                #Allow the user to link a GP album to the place
+                self.add_album(selected_city, len(self.data['destinations'][selected_city]['places']) - 1, allow_add_another=False)
+
+            add_another = input('Add Another? (y/n): ')
+
+            u.cls()
+            
+            if add_another.lower() == 'y':
+                self.add_place(override_city=selected_city)
+        
         u.cls()
-        
-        if search_albums.lower() == 'y':
-            #Allow the user to link a GP album to the place
-            self.add_album(selected_city, len(self.data['destinations'][selected_city]['places']) - 1, allow_add_another=False)
-
-        add_another = input('Add Another? (y/n): ')
-
-        u.cls()
-        
-        if add_another.lower() == 'y':
-            self.add_place(override_city=selected_city)
 
 
     def edit_place(self, override_city=None, override_place=None):
