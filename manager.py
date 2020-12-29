@@ -757,6 +757,7 @@ class Manager(object):
 
         #TODO: Should probably also clean out the directory in S3
         self.data['destinations'][selected_city]['places'][selected_place]['images'] = []
+        self.data['destinations'][selected_city]['places'][selected_place]['albumId'] = suggestions[selection][1]
 
         #Retrieve the corresponding city and place objects
         city = self.data['destinations'][selected_city]['city']
