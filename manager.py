@@ -99,6 +99,10 @@ class Manager(object):
         
         archive_version = self.get_archive_sequence()
         self.s3_resource.Object(self.bucket_name, 'archive/{}_{}'.format(str(archive_version), self.file_name)).put(Body=json.dumps(self.data, sort_keys=True, indent=4))
+        
+        with open('./data.json', 'w') as fh:
+            fh.write(json.dumps(self.data, indent=4, sort_keys=True))
+
         return True
 
     def get_archive_sequence(self):
