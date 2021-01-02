@@ -783,9 +783,94 @@ class Manager(object):
             if upload_another.lower() == 'y':
                 self.add_album(override_city=selected_city)
 
-        #Retrieve the corresponding city and place objects
-        city = self.data['destinations'][selected_city]['city']
-        place = self.data['destinations'][selected_city]['places'][selected_place]['name']
+    def upload_photos(self, override_city=None, override_place=None, allow_upload_another=True):
+        """
+        Download photos from a Google Photos album and add them to a place
+
+        Args:
+            override_city::[int] 
+                the ID of the city containing the place.  If not specified, the user will be prompted to select a city
+
+            override_place::[int]
+                the ID of the place.  If not specified the user will be prompted to select a place
+
+            allow_add_another::[bool]
+                whether the user should be prompted to add another album to another place
+        
+        Returns:
+            None
+        """
+
+        #Throw an error if override_city == None and override_place != None
+        assert not (override_city == None and override_place != None)
+        
+        #Get City
+        if override_city == None:     
+            u.cls()
+
+            print('Select a city', '\n')
+            
+            self.print_city_options()
+
+            print()
+
+            inp = input('Selection: ')
+
+            if inp == '\\':
+                u.cls()
+                return
+
+            selected_city = u.try_cast(inp, int) - 1
+            assert selected_city != None
+            assert 0 <= selected_city < len(self.data['destinations'])
+            assert len(self.data['destinations'][selected_city]['places']) > 0
+        
+        else:
+            selected_city = override_city
+
+        u.cls()
+
+        #Get Place
+        if override_place == None:
+            u.cls()
+
+            print('Select a place', '\n')
+
+            self.print_place_options(selected_city)
+
+            print()
+
+            sel = input('Selection: ')
+
+            if sel == '\\':
+                u.cls()
+                return
+
+            selected_place = u.try_cast(sel, int) - 1
+            assert selected_place != None
+            #If the user selects 0, go back
+            if selected_place == -1:
+                u.cls()
+                self.add_album()
+                return 0 
+            assert 0 <= selected_place < len(self.data['destinations'][selected_city]['places'])
+
+
+
+        else:
+            assert isinstance(override_place, int)
+            selected_place = override_place
+
+        u.cls()
+
+        city = self.data['destinations'][selected_city]
+        place = self.data['destinations'][selected_city]['places'][selected_place]
+        
+        print("{}: {}".format(city['city'], place['name']))
+
+        photos = self.gp.get_album_photos(place.get('albumId'))
+
+        self.data['destinations'][selected_city]['places'][selected_place]['images'] = []
 
         for i, photo in enumerate(photos):
             print("Uploading Image {} out of {}".format(i, len(photos)))
