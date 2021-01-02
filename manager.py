@@ -913,17 +913,17 @@ class Manager(object):
             })
 
             u.cls()
-
+        
         self.overwrite()
         u.cls()
 
-        if allow_add_another:
-            add_another = input('Add Another? (y/n): ')
+        if allow_upload_another:
+            upload_another = input('Upload Another Album? (y/n): ')
 
             u.cls()
-            if add_another.lower() == 'y':
-                self.add_album(override_city=selected_city)
-                
+            if upload_another.lower() == 'y':
+                self.upload_photos(override_city=selected_city)
+
 
 if __name__ == '__main__':
     import configparser as cp
