@@ -897,7 +897,7 @@ class Manager(object):
             print(file_name)
 
             #Generate the S3 file path
-            file_path = "{}/{}/{}/".format('images', city, place).replace(" ", "_")
+            file_path = "{}/{}/".format('images', city['city']).replace(" ", "_")
 
             #Write the image to S3
             # self.s3_resource.Object(self.bucket_name, file_path + file_name).put(Body=buffer, ACL='public-read', ContentType='image/png')
