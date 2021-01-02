@@ -899,9 +899,9 @@ class Manager(object):
             #Generate the S3 file path
             file_path = "{}/{}/".format('images', city['city']).replace(" ", "_")
 
-            #Write the image to S3
-            # self.s3_resource.Object(self.bucket_name, file_path + file_name).put(Body=buffer, ACL='public-read', ContentType='image/png')
-            self.write_image_to_s3(file_path + file_name, buffer, ACL='public-read', ContentType='image/png')
+            if not self.does_image_exist(file_path + file_name):
+                #Write the image to S3
+                self.write_image_to_s3(file_path + file_name, buffer, ACL='public-read', ContentType='image/png')
 
             #Update the data to reflect the image upload
             self.data['destinations'][selected_city]['places'][selected_place]['imagesPath'] = self.s3_base + file_path
