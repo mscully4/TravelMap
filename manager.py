@@ -894,6 +894,7 @@ class Manager(object):
             md5 = hl.md5()
             md5.update(content)
             file_name = md5.hexdigest() + ".png"
+            print(file_name)
 
             #Generate the S3 file path
             file_path = "{}/{}/{}/".format('images', city, place).replace(" ", "_")
