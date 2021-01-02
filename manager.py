@@ -176,6 +176,7 @@ class Manager(object):
             print('5. Edit a place')
             print('6. Delete a city')
             print('7. Delete a place')
+            print('8. Upload Photos')
 
             print()
 
@@ -183,7 +184,7 @@ class Manager(object):
 
             selection = u.try_cast(selection, int) 
             assert selection != None
-            assert 0 <= selection <= 7
+            assert 0 <= selection <= 8
 
             if selection == 0:
                 self.run = False
@@ -201,6 +202,8 @@ class Manager(object):
                 self.delete_city()
             elif selection == 7:
                 self.delete_place()
+            elif selection == 8:
+                self.upload_photos()
 
     def add_city(self):
         """
