@@ -776,6 +776,13 @@ class Manager(object):
         #TODO: Should probably also clean out the directory in S3
         self.data['destinations'][selected_city]['places'][selected_place]['albumId'] = suggestions[selection][1]
 
+        if allow_add_another:
+            upload_another = input('Add Another Album? (y/n): ')
+
+            u.cls()
+            if upload_another.lower() == 'y':
+                self.add_album(override_city=selected_city)
+
         #Retrieve the corresponding city and place objects
         city = self.data['destinations'][selected_city]['city']
         place = self.data['destinations'][selected_city]['places'][selected_place]['name']
