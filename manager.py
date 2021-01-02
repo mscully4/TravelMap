@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 from GooglePhotos import GooglePhotos
 import utils as u
 
