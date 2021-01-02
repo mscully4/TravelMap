@@ -771,14 +771,9 @@ class Manager(object):
             return
         assert 0 <= selection < len(suggestions)
         
-
-        #Otherwise get the photos from the selection
-        photos = self.gp.get_album_photos(suggestions[selection][1])
-
         u.cls()
 
         #TODO: Should probably also clean out the directory in S3
-        self.data['destinations'][selected_city]['places'][selected_place]['images'] = []
         self.data['destinations'][selected_city]['places'][selected_place]['albumId'] = suggestions[selection][1]
 
         #Retrieve the corresponding city and place objects
