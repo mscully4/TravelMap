@@ -6,6 +6,7 @@ import utils as u
 import googlemaps as gm
 import json
 import boto3
+import botocore
 import requests
 import hashlib  as hl
 from PIL import Image
@@ -116,6 +117,18 @@ class Manager(object):
 
     def write_image_to_s3(self, file_name, img, **kwargs):
         return self.s3_resource.Object(self.bucket_name, file_name).put(Body=img, **kwargs)
+
+    def does_image_exist(self, file_name):
+        try:
+            self.s3_resource.Object(self.bucket_name, file_name).load()
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == "404":
+            # The object does not exist.
+                return False
+            else:
+                return True
+        else:
+            return True
 
     def print_city_options(self):
         cities = self.data['destinations']
