@@ -13,7 +13,7 @@ from PIL import Image
 import io
 import math
 import os
-
+from time import sleep
 
 class Manager(object):
     def __init__(self, bucket_name, file_name, gp):
@@ -770,7 +770,7 @@ class Manager(object):
             self.add_album(override_city=selected_city, override_place=selected_place)
             return
         assert 0 <= selection < len(suggestions)
-        
+
         u.cls()
 
         #TODO: Should probably also clean out the directory in S3
@@ -868,7 +868,14 @@ class Manager(object):
         
         print("{}: {}".format(city['city'], place['name']))
 
-        photos = self.gp.get_album_photos(place.get('albumId'))
+        albumId = place.get('albumId')
+
+        if albumId == None:
+            sleep(5)
+            print("No album found!")
+            return 0
+
+        photos = self.gp.get_album_photos(albumId)
 
         self.data['destinations'][selected_city]['places'][selected_place]['images'] = []
 
