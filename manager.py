@@ -152,6 +152,23 @@ class Manager(object):
             else: 
                 print()
 
+    def scale_image(self, image, max_size=2048):
+        width, height = image.size
+        ratio = width / height
+        print(width, height, max_size)
+
+        if width <= max_size and height <= max_size:
+            print(1)
+            pass
+        elif ratio > 1:
+            print(2)
+            image = image.resize((max_size, int(max_size / ratio)))
+        elif ratio < 1:
+            print(3)
+            image = image.resize((int(max_size * ratio), max_size))
+
+        return image
+
     ###CLI Functions
     def menu(self):
         """
@@ -783,7 +800,7 @@ class Manager(object):
             if upload_another.lower() == 'y':
                 self.add_album(override_city=selected_city)
 
-    def upload_photos(self, override_city=None, override_place=None, allow_upload_another=True):
+    def upload_cover_photo(self, override_city=None, override_place=None, allow_upload_another=True):
         """
         Download photos from a Google Photos album and add them to a place
 
@@ -912,6 +929,109 @@ class Manager(object):
             'hash': md5.hexdigest()
         }
 
+        self.overwrite()
+        u.cls()
+
+        if allow_upload_another:
+            upload_another = input('Upload Another Album? (y/n): ')
+
+            u.cls()
+            if upload_another.lower() == 'y':
+                self.upload_photos(override_city=selected_city)
+
+
+    def upload_photos(self, override_city=None, override_place=None, allow_upload_another=True):
+        """
+        Download photos from a Google Photos album and add them to a place
+
+        Args:
+            override_city::[int] 
+                the ID of the city containing the place.  If not specified, the user will be prompted to select a city
+
+            override_place::[int]
+                the ID of the place.  If not specified the user will be prompted to select a place
+
+            allow_add_another::[bool]
+                whether the user should be prompted to add another album to another place
+        
+        Returns:
+            None
+        """
+
+        #Throw an error if override_city == None and override_place != None
+        assert not (override_city == None and override_place != None)
+        
+        #Get City
+        if override_city == None:     
+            u.cls()
+
+            print('Select a city', '\n')
+            
+            self.print_city_options()
+
+            print()
+
+            inp = input('Selection: ')
+
+            if inp == '\\':
+                u.cls()
+                return
+
+            selected_city = u.try_cast(inp, int) - 1
+            assert selected_city != None
+            assert 0 <= selected_city < len(self.data['destinations'])
+            assert len(self.data['destinations'][selected_city]['places']) > 0
+        
+        else:
+            selected_city = override_city
+
+        u.cls()
+
+        #Get Place
+        if override_place == None:
+            u.cls()
+
+            print('Select a place', '\n')
+
+            self.print_place_options(selected_city)
+
+            print()
+
+            sel = input('Selection: ')
+
+            if sel == '\\':
+                u.cls()
+                return
+
+            selected_place = u.try_cast(sel, int) - 1
+            assert selected_place != None
+            #If the user selects 0, go back
+            if selected_place == -1:
+                u.cls()
+                self.add_album()
+                return 0 
+            assert 0 <= selected_place < len(self.data['destinations'][selected_city]['places'])
+
+
+
+        else:
+            assert isinstance(override_place, int)
+            selected_place = override_place
+
+        u.cls()
+
+        city = self.data['destinations'][selected_city]
+        place = self.data['destinations'][selected_city]['places'][selected_place]
+        
+        print("{}: {}".format(city['city'], place['name']))
+
+        albumId = place.get('albumId')
+
+        if albumId == None:
+            sleep(5)
+            print("No album found!")
+            return 0
+
         photos = self.gp.get_album_photos(albumId)
 
         self.data['destinations'][selected_city]['places'][selected_place]['images'] = []
@@ -927,7 +1047,10 @@ class Manager(object):
 
             #Open the image in Pillow to get its height and width
             image = Image.open(io.BytesIO(content))
+
+            image = self.scale_image(image)
             width, height = image.size
+            print(width, height)
 
             #Save the image back out to a buffer and repoint the buffer back to the beginning
             buffer = io.BytesIO()
