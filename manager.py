@@ -875,6 +875,43 @@ class Manager(object):
             print("No album found!")
             return 0
 
+        #Retrieve the album info
+        cover_photo = self.gp.get_album_info(albumId)
+        
+        #Get the cover photo
+        r = requests.get(cover_photo['coverPhotoBaseUrl'])
+        r.raw.decode_content = True # handle spurious Content-Encoding
+
+        #Save the file contents to a variable
+        content = r.content
+
+        #Open the image in Pillow to get its height and width
+        image = Image.open(io.BytesIO(content))
+
+        #Save the image back out to a buffer and repoint the buffer back to the beginning
+        buffer = io.BytesIO()
+        image.save(buffer, 'PNG')
+        buffer.seek(0)
+
+        #Hash the image content to generate a unique name, this will also help prevent duplicates
+        md5 = hl.md5()
+        md5.update(content)
+        file_name = md5.hexdigest() + ".png"
+        print(file_name)
+
+        #Generate the S3 file path
+        file_path = "{}/{}/".format('images', city['city']).replace(" ", "_")
+
+        if not self.does_image_exist(file_path + file_name):
+            #Write the image to S3
+            self.write_image_to_s3(file_path + file_name, buffer, ACL='public-read', ContentType='image/png')
+
+        #Update the data to reflect the image upload
+        self.data['destinations'][selected_city]['places'][selected_place]['coverPhoto'] = {
+            'src': self.s3_base + file_path + file_name,
+            'hash': md5.hexdigest()
+        }
+
         photos = self.gp.get_album_photos(albumId)
 
         self.data['destinations'][selected_city]['places'][selected_place]['images'] = []
