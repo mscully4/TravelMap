@@ -190,6 +190,7 @@ class Manager(object):
             print('6. Delete a city')
             print('7. Delete a place')
             print('8. Upload Photos')
+            print('9. Upload Album Cover')
 
             print()
 
@@ -197,7 +198,7 @@ class Manager(object):
 
             selection = u.try_cast(selection, int) 
             assert selection != None
-            assert 0 <= selection <= 8
+            assert 0 <= selection <= 9
 
             if selection == 0:
                 self.run = False
@@ -217,7 +218,9 @@ class Manager(object):
                 self.delete_place()
             elif selection == 8:
                 self.upload_photos()
-
+            elif selection == 9:
+                self.upload_cover_photo()
+                
     def add_city(self):
         """
         Adding a city to the dictionary
