@@ -754,7 +754,7 @@ class Manager(object):
             print("Album already exists for this place!")
 
         #Get album name
-        album_name = input('Search for albums: ')
+        album_name = u.rlinput('Search for albums: ', self.data['destinations'][selected_city].get('city', "") + " -- " + self.data['destinations'][selected_city]['places'][selected_place].get('name', ""))
 
         if album_name == '\\':
             u.cls()
