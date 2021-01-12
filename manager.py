@@ -1032,6 +1032,8 @@ class Manager(object):
             print("No album found!")
             return 0
 
+        self.upload_cover_photo(override_city=selected_city, override_place=selected_place, allow_upload_another=False)
+
         photos = self.gp.get_album_photos(albumId)
 
         self.data['destinations'][selected_city]['places'][selected_place]['images'] = []
