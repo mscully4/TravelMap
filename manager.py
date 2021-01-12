@@ -791,6 +791,7 @@ class Manager(object):
 
         #TODO: Should probably also clean out the directory in S3
         self.data['destinations'][selected_city]['places'][selected_place]['albumId'] = suggestions[selection][1]
+        self.overwrite()
 
         if allow_add_another:
             upload_another = input('Add Another Album? (y/n): ')
