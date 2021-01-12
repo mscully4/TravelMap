@@ -1052,7 +1052,6 @@ class Manager(object):
 
             image = self.scale_image(image)
             width, height = image.size
-            print(width, height)
 
             #Save the image back out to a buffer and repoint the buffer back to the beginning
             buffer = io.BytesIO()
