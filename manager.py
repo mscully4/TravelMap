@@ -155,16 +155,12 @@ class Manager(object):
     def scale_image(self, image, max_size=2048):
         width, height = image.size
         ratio = width / height
-        print(width, height, max_size)
 
         if width <= max_size and height <= max_size:
-            print(1)
             pass
         elif ratio > 1:
-            print(2)
             image = image.resize((max_size, int(max_size / ratio)))
         elif ratio < 1:
-            print(3)
             image = image.resize((int(max_size * ratio), max_size))
 
         return image
