@@ -31,7 +31,7 @@ class Manager(object):
 
         self.data = self.read(self.file_name)
         self.cities = [city.get('place_id') for city in self.data['destinations']]
-        self.places = [p.get('placeId') for city in self.data['destinations'] for p in city['places']]
+        self.places = [p.get('place_id') for city in self.data['destinations'] for p in city['places']]
         self.images = {city['city']: {place['name']: place['images'] for place in city['places']} for city in self.data['destinations']}
 
         self.run = True
@@ -44,8 +44,8 @@ class Manager(object):
     def get_place_suggestions(self, text, location=None, radius=None):
         return self.gm.places_autocomplete(text, location=location, radius=radius)
 
-    def geocode_city(self, placeId):
-        s = self.gm.reverse_geocode(placeId)[0]
+    def geocode_city(self, place_id):
+        s = self.gm.reverse_geocode(place_id)[0]
 
         for comp in s['address_components']:
             if 'country' in comp['types']:
@@ -58,7 +58,7 @@ class Manager(object):
             'countryCode': country_code,
             'latitude': s['geometry']['location']['lat'],
             'longitude': s['geometry']['location']['lng'],
-            'place_id': placeId
+            'place_id': place_id
         }
         return data
 
@@ -82,7 +82,7 @@ class Manager(object):
 
         return {
             'name': ac['structured_formatting']['main_text'],
-            'placeId': ac['place_id'],
+            'place_id': ac['place_id'],
             'address': street + " " + street_number,
             'city': city,
             'state': state,
@@ -484,8 +484,7 @@ class Manager(object):
         #Geocode the place and fill in some info
         place = self.geocode_place(ac=sugs[selection])
 
-        if place['placeId'] not in self.places:
-            place['main_type'] = ''
+        if place['place_id'] not in self.places:
             place['city'] = city['city']
             place['images'] = []
             self.data['destinations'][selected_city]['places'].append(place) 
