@@ -13,7 +13,7 @@ from PIL import Image
 import io
 import math
 import os
-from time import sleep
+from time import sleep, time
 
 class Manager(object):
     def __init__(self, bucket_name, file_name, gp):
@@ -1038,6 +1038,9 @@ class Manager(object):
 
         self.data['destinations'][selected_city]['places'][selected_place]['images'] = []
 
+        existing = 0
+        start_time = time()
+
         for i, photo in enumerate(photos):
             print("Uploading Image {} out of {}".format(i, len(photos)))
             
@@ -1070,6 +1073,8 @@ class Manager(object):
             if not self.does_image_exist(file_path + file_name):
                 #Write the image to S3
                 self.write_image_to_s3(file_path + file_name, buffer, ACL='public-read', ContentType='image/png')
+            else:
+                existing += 1
 
             #Update the data to reflect the image upload
             self.data['destinations'][selected_city]['places'][selected_place]['imagesPath'] = self.s3_base + file_path
@@ -1086,6 +1091,11 @@ class Manager(object):
         u.cls()
 
         if allow_upload_another:
+            print(f'{place["name"]}')
+            print("Duration: {}".format(round(time() - start_time, 3)))
+            print('Existing Photos: {}'.format(existing))
+            print('Uploaded Photos: {}'.format(len(photos) - existing))
+            print('Total Photos: {}'.format(len(photos)))
             upload_another = input('Upload Another Album? (y/n): ')
 
             u.cls()
