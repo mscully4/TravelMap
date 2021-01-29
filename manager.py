@@ -871,8 +871,6 @@ class Manager(object):
                 return 0 
             assert 0 <= selected_place < len(self.data['destinations'][selected_city]['places'])
 
-
-
         else:
             assert isinstance(override_place, int)
             selected_place = override_place
@@ -913,7 +911,6 @@ class Manager(object):
         md5 = hl.md5()
         md5.update(content)
         file_name = md5.hexdigest() + ".png"
-        print(file_name)
 
         #Generate the S3 file path
         file_path = "{}/{}/".format('images', city['city']).replace(" ", "_")
@@ -1010,8 +1007,6 @@ class Manager(object):
                 self.add_album()
                 return 0 
             assert 0 <= selected_place < len(self.data['destinations'][selected_city]['places'])
-
-
 
         else:
             assert isinstance(override_place, int)
