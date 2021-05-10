@@ -1,23 +1,16 @@
-import configparser as cp
 import json
-import boto3
 import pickle
 import os
 from google_auth_oauthlib.flow import Flow, InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.auth.transport.requests import Request
-
 from fuzzywuzzy import fuzz
-
-
-SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
-CLIENT_SECRET_FILE = '/home/michael/Downloads/client_secret_533824499350-pb7pa1qg5m7mvf5jnin0t0t1sdruesos.apps.googleusercontent.com.json'
 
 class GooglePhotos(object):
     def __init__(self, client_secret_file, scopes):
-        self.service = self.Create_Service(CLIENT_SECRET_FILE, 'photoslibrary', 'v1', SCOPES)
-        self.albums = self.get_albums()
+        self.service = self.Create_Service(client_secret_file, 'photoslibrary', 'v1', scopes)
+        self.albums = None
 
 
     def Create_Service(self, client_secret_file, api_name, api_version, *scopes):
@@ -35,8 +28,7 @@ class GooglePhotos(object):
             if cred and cred.expired and cred.refresh_token:
                 cred.refresh(Request())
             else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    CLIENT_SECRET_FILE, SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file(client_secret_file, scopes)
                 cred = flow.run_local_server()
 
             with open(pickle_file, 'wb') as token:
@@ -49,6 +41,12 @@ class GooglePhotos(object):
             print(e)
 
     def get_albums(self):
+        '''
+        A method for retrieving all the Google Photos albums for a user
+
+        Returns:
+            <list>: A list of albums
+        '''
         a = []
 
         pageToken = ''
@@ -65,14 +63,36 @@ class GooglePhotos(object):
         return a
 
     def get_album_id(self, album_name):
+        '''
+        A method for returning the album id given an album name
+        '''
+        assert self.albums
         for album in self.albums:
             if album_name == album['title']:
                 return album['id']
 
     def get_album_info(self, album_id):
+        '''
+        A method for retrieving album metadata given an album id
+
+        Arguments:
+            album_id <str>: An album's unique identifier
+
+        Returns:
+            <dict>: A dictionary of album metadata
+        '''
         return self.service.albums().get(albumId=album_id).execute()
 
     def get_album_photos(self, album_id):
+        '''
+        A method for retrieivng urls for all the photos in an album
+
+        Arguments:
+            album_id <str>: An album's unique identifier
+
+        Returns:
+            photos <list>: A list of objects
+        '''
         photos = []
 
         page_token = ''
@@ -88,14 +108,12 @@ class GooglePhotos(object):
         return photos
 
     def get_album_suggestions(self, albums, entry, n=5):
+        '''
+        A method for calculating the closest matching existing album names given a text entry
+        '''
         albums = [(i['title'], i['id']) for i in albums]
 
         def fuzzy_match_rating(a):
             return -fuzz.token_set_ratio(entry.lower(), a[0].lower())
 
         return sorted(albums, key=fuzzy_match_rating)[:n]
-
-    
-if __name__ == '__main__':
-    service = GooglePhotos(CLIENT_SECRET_FILE, SCOPES)
-    
