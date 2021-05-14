@@ -1,5 +1,6 @@
 import pprint
 from decimal import Decimal
+from DynamoDB import _put_item, _delete_item
 
 class Place(object):
     '''This helper class provides property access (the "dot notation")
@@ -40,19 +41,28 @@ class Place(object):
     # def city(self, city):
     #     if isinstance(city, str):
     #         self._city = city
+    def insert(self, table):
+        _put_item(table, self.serialize())
+
+    def update(self, table):
+        _put_item(table, self.serialize())
+    
+    def delete(self, table):
+        key = {
+            "place_id": self.place_id
+        }
+        _delete_item(table, key)
 
     def serialize(self):
         return {
             "place_id": self.place_id,
-            # "entry": {
-                "name": self.name,
-                "address": self.address,
-                "city": self.city,
-                "state": self.state,
-                "country": self.country,
-                "zip_code": self.zip_code,
-                "latitude": Decimal(str(self.latitude)),
-                "longitude": Decimal(str(self.longitude)),
-                "city_id": self.city_id
-            # }
+            "name": self.name,
+            "address": self.address,
+            "city": self.city,
+            "state": self.state,
+            "country": self.country,
+            "zip_code": self.zip_code,
+            "latitude": Decimal(str(self.latitude)),
+            "longitude": Decimal(str(self.longitude)),
+            "city_id": self.city_id
         }

@@ -1,18 +1,49 @@
+import sys
 import os
 import boto3
 from boto3.dynamodb.conditions import Key
 import json
 from decimal import Decimal
 
-class DynamoDB:
-    def __init__(self):
-        self.dynamo = self.create_dynamo_resource()
+def create_dynamo_resource():
+    return boto3.resource('dynamodb')
 
-    def create_dynamo_resource(self):
-        return boto3.resource('dynamodb')
+def create_dynamo_table_client(resource, table_name):
+    return resource.Table(table_name)
 
-    def create_dynamo_table_client(self, table_name):
-        return self.dynamo.Table(table_name)
+
+# def _query_table(table, partition_key=None, partition_key_value=None, sort_key=None, sort_key_value=None):
+#     if key is not None and value is not None:
+#         filtering_exp = Key(key).eq(value)
+#         resp = table.query(KeyConditionExpression=filtering_exp)
+#         print(69)
+#         return resp['Items']
+
+    raise ValueError('Parameters missing or invalid')
+
+def _put_item(table, data):
+    resp = table.put_item(
+        Item=data
+    )
+
+    assert resp['ResponseMetadata']['HTTPStatusCode'] == 200
+    return True
+
+def _delete_item(table, key):
+
+    resp = table.delete_item(
+        Key=key,
+    )
+    assert resp['ResponseMetadata']['HTTPStatusCode'] == 200
+
+    # except ClientError as e:
+    #     if e.response['Error']['Code'] == "ConditionalCheckFailedException":
+    #         print(e.response['Error']['Message'])
+    #     else:
+    #         raise
+    # else:
+    #     return response
+
 
 #Metadata Table CRUD Operations
 def metadata_get(table, context):
@@ -40,7 +71,7 @@ def metadata_add(table, context, place_id):
 def metadata_remove(table, context, place_id):
     resp = table.update_item(
         Key={"context": context},
-        UpdateExpression="DELETE value :p",
+        UpdateExpression="DELETE entry :p",
         ExpressionAttributeValues={
             ":p": set([place_id])
         },
@@ -102,9 +133,14 @@ def place_add(table, data):
     assert resp['ResponseMetadata']['HTTPStatusCode'] == 200
     return True
 
-def _query_table(table, key=None, value=None):
-    if key is not None and value is not None:
-        filtering_exp = Key(key).eq(value)
-        return table.query(KeyConditionExpression=filtering_exp)
+#Album CRUD Operations
+def album_add(table, data):
+    resp = table.put_item(
+        Item=data
+    )
 
-    raise ValueError('Parameters missing or invalid')
+    assert resp['ResponseMetadata']['HTTPStatusCode'] == 200
+    return True
+
+def photo_add(table, data):
+    _insert_into_table(table, data)

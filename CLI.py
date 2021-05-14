@@ -2,7 +2,7 @@ import utils as u
 import math
 
 def select_city(cities):
-    u.cls()
+    # u.cls()
 
     print('Select a city', '\n')
     
@@ -13,19 +13,19 @@ def select_city(cities):
     inp = input('Selection: ')
 
     if inp == '\\':
-        u.cls()
+        # u.cls()
         return
 
     selected_city = u.try_cast(inp, int) - 1
     assert selected_city != None
     assert 0 <= selected_city <= len(cities)
 
-    u.cls()
+    # u.cls()
 
     return selected_city
 
 def select_place(places):
-    u.cls()
+    # u.cls()
 
     print('Select a place', '\n')
 
@@ -36,14 +36,14 @@ def select_place(places):
     sel = input('Selection: ')
 
     if sel == '\\':
-        u.cls()
+        # u.cls()
         return
 
     selected_place = u.try_cast(sel, int) - 1
     assert selected_place != None
     #If the user selects 0, go back
     if selected_place == -1:
-        u.cls()
+        # u.cls()
         select_place(places)
         return 0 
     assert 0 <= selected_place < len(places)
@@ -57,9 +57,9 @@ def _print_city_options(cities):
     half = math.ceil(len(cities) / 2)
 
     for i in range(half):
-        print("{0: <50}".format(str(i + 1) + ". " + cities[i]['entry']['city']), end='')
+        print("{0: <50}".format(str(i + 1) + ". " + cities[i]['city']), end='')
         if i + half + 1 <= len(cities):
-            print("{0}".format(str(i + half + 1) + ". " + cities[i + half]['entry']['city']))
+            print("{0}".format(str(i + half + 1) + ". " + cities[i + half]['city']))
         else:
             print()
 
@@ -123,17 +123,6 @@ def add_city(gm):
         selected_city = s[sel]
         return selected_city[1]
 
-        # # Check if the selected city is already in the dictionary
-        # assert selected_city[1] not in self.cities
-
-        # gc = self.geocode_city(selected_city[1])
-        # gc['places'] = []
-
-        # self.data['destinations'].append(gc)
-        # self.cities.append(gc['place_id'])
-
-        # u.cls()
-
     else:
         u.cls()
 
@@ -146,17 +135,6 @@ def add_city(gm):
             return 0
 
         return inp
-
-        # gc = self.geocode_city(inp)
-
-        # gc['places'] = []
-
-        # self.data['destinations'].append(gc)
-        # self.cities.append(gc['place_id'])
-
-        # u.cls()
-
-    # self.edit_city(len(self.cities) - 1)
 
 def add_place(gm, cities, override_city=None):
     """
@@ -198,7 +176,7 @@ def add_place(gm, cities, override_city=None):
 
     city = cities[selected_city]
 
-    print('Selected City: {}'.format(city['entry']['city']))
+    print('Selected City: {}'.format(city.get('city')))
     print('Enter a place name to use the autocomplete functionality.')
 
     print()
@@ -210,7 +188,7 @@ def add_place(gm, cities, override_city=None):
         return 
 
     # # TODO pull this constant out
-    sugs = gm.get_place_suggestions(inp, location=[city['entry']['latitude'], city['entry']['longitude']])
+    sugs = gm.get_place_suggestions(inp, location=[city['latitude'], city['longitude']])
 
     print()
 
@@ -236,36 +214,11 @@ def add_place(gm, cities, override_city=None):
 
     # Geocode the place and fill in some info
     place = gm.geocode_place(ac=sugs[selection])
-    place['city'] = city['entry']['city']
+    place['city'] = city['city']
     place['city_id'] = city['place_id']
-    # place['images'] = []
     return place
-    # if place['place_id'] not in self.places:
-    #     place['city'] = city['city']
-    #     place['images'] = []
-    #     self.data['destinations'][selected_city]['places'].append(place) 
 
-    #     # Allow user to edit autocomplete information
-    #     self.edit_place(selected_city, len(self.data['destinations'][selected_city]['places']) - 1)
-    
-    #     search_albums = input('Search for albums? (y/n): ')
-
-    #     u.cls()
-        
-    #     if search_albums.lower() == 'y':
-    #         # Allow the user to link a GP album to the place
-    #         self.add_album(selected_city, len(self.data['destinations'][selected_city]['places']) - 1, allow_add_another=False)
-
-    #     add_another = input('Add Another? (y/n): ')
-
-    #     u.cls()
-        
-    #     if add_another.lower() == 'y':
-    #         self.add_place(override_city=selected_city)
-    
-    # u.cls()
-
-def add_album(cities, places, override_city=None, override_place=None, allow_add_another=True):
+def add_album(gp, city, place, allow_add_another=True):
     """
     Download photos from a Google Photos album and add them to a place
 
@@ -283,97 +236,138 @@ def add_album(cities, places, override_city=None, override_place=None, allow_add
         None
     """
 
-    #Throw an error if override_city == None and override_place != None
-    assert not (override_city == None and override_place != None)
+    #Get album name
+    album_name = u.rlinput('Search for albums: ', f"{city.city} -- {place.name}")
 
-    #Get City
-    if override_city == None:     
-        selected_city = _select_city(cities)
-    
-    else:
-        selected_city = override_city
-
-    # u.cls()
-
-    # #Get Place
-    # if override_place == None:
-    #     u.cls()
-
-    #     print('Select a place', '\n')
-
-    #     self.print_place_options(selected_city)
-
-    #     print()
-
-    #     sel = input('Selection: ')
-
-    #     if sel == '\\':
-    #         u.cls()
-    #         return
-
-    #     selected_place = u.try_cast(sel, int) - 1
-    #     assert selected_place != None
-    #     #If the user selects 0, go back
-    #     if selected_place == -1:
-    #         u.cls()
-    #         self.add_album()
-    #         return 0 
-    #     assert 0 <= selected_place < len(self.data['destinations'][selected_city]['places'])
-
-        
-
-    # else:
-    #     assert isinstance(override_place, int)
-    #     selected_place = override_place
-
-    # u.cls()
-
-    # if self.data['destinations'][selected_city]['places'][selected_place].get('albumId', None) != None:
-    #     print("Album already exists for this place!")
-
-    # #Get album name
-    # album_name = u.rlinput('Search for albums: ', self.data['destinations'][selected_city].get('city', "") + " -- " + self.data['destinations'][selected_city]['places'][selected_place].get('name', ""))
-
-    # if album_name == '\\':
-    #     u.cls()
-    #     return
+    if album_name == '\\':
+        u.cls()
+        return
 
     # #Get suggestions from Google Photos, limit to 5
-    # suggestions = self.gp.get_album_suggestions(self.gp.get_albums(), album_name, 5)
+    suggestions = gp.get_album_suggestions(gp.get_albums(), album_name, 5)
 
-    # print()
+    print()
 
-    # print("0. To Go Back")
-    # for i, suggestion in enumerate(suggestions):
-    #     print('{}. {}'.format(i + 1, suggestion[0]))
+    print("0. To Go Back")
+    for i, suggestion in enumerate(suggestions):
+        print('{}. {}'.format(i + 1, suggestion[0]))
 
-    # print()
+    print()
 
-    # inp = input('Selection: ') 
+    inp = input('Selection: ') 
 
-    # if inp == '\\':
-    #     u.cls()
-    #     return
+    if inp == '\\':
+        u.cls()
+        return
 
-    # #Decrement by 1 since Python indexs at 0
-    # selection = u.try_cast(inp, int) - 1
-    # assert selection != None
-    # #If the user entered 0, go back
-    # if selection == -1:
-    #     u.cls()
-    #     self.add_album(override_city=selected_city, override_place=selected_place)
-    #     return
-    # assert 0 <= selection < len(suggestions)
+    #Decrement by 1 since Python indexs at 0
+    selection = u.try_cast(inp, int) - 1
+    assert selection != None
+    #If the user entered 0, go back
+    if selection == -1:
+        u.cls()
+        add_album(gp, city=city, place=place)
+        return
+    assert 0 <= selection < len(suggestions)
 
-    # u.cls()
+    u.cls()
+    print(suggestions[selection])
 
-    # #TODO: Should probably also clean out the directory in S3
-    # self.data['destinations'][selected_city]['places'][selected_place]['albumId'] = suggestions[selection][1]
-    # self.overwrite()
+    return {
+        "album_id": suggestions[selection][1],
+        "place_id": place.place_id 
+    }
 
-    # if allow_add_another:
-    #     upload_another = input('Add Another Album? (y/n): ')
+def edit_city(city):
+    """
+    Editing the information of a city in the dictionary
 
-    #     u.cls()
-    #     if upload_another.lower() == 'y':
-    #         self.add_album(override_city=selected_city)
+    Args:
+        override_city::[int] 
+            the ID of the city containing the place.  If not specified, the user will be prompted to select a city
+
+    Returns:
+        None
+    """
+
+    u.cls()
+
+    for k, v in city.__dict__.items():
+        inp = u.rlinput('{}: '.format(k), str(v))
+        
+        inp_as_float = u.try_cast(inp, float)        
+        if inp_as_float != None:
+            #If the input is a number, save it as a float or int
+            city.__dict__[k] = inp_as_float if '.' in inp else int(inp) 
+            #if the input is a string, save it as such
+        
+        elif isinstance(v, str):
+            city.__dict__[k] = inp
+        
+    return city
+
+def edit_place(place):
+    """
+    Editing the information of a city in the dictionary
+
+    Args:
+        override_city::[int] 
+            the ID of the city containing the place.  If not specified, the user will be prompted to select a city
+
+    Returns:
+        None
+    """
+
+    u.cls()
+
+    for k, v in place.__dict__.items():
+        inp = u.rlinput('{}: '.format(k), str(v))
+        
+        inp_as_float = u.try_cast(inp, float)        
+        if inp_as_float != None:
+            #If the input is a number, save it as a float or int
+            place.__dict__[k] = inp_as_float if '.' in inp else int(inp) 
+            #if the input is a string, save it as such
+        
+        elif isinstance(v, str):
+            place.__dict__[k] = inp
+        
+    return place
+
+def delete_city(self):
+    """
+    Deleting a city from the dictionary
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
+
+    u.cls()
+
+    print('Select a city to delete')
+    
+    print()
+    
+    _print_city_options()
+
+    print()
+
+    inp = input('Selection: ')
+
+    if inp == '\\':
+        u.cls()
+        return
+
+    selected_city = u.try_cast(inp, int) - 1
+    assert selected_city != None
+    assert 0 <= selected_city <= len(self.data['destinations'])
+
+    #Delete the City from the dictionary
+    del self.data['destinations'][selected_city]
+
+    self.overwrite()
+
+    u.cls()

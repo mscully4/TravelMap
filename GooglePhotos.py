@@ -53,7 +53,7 @@ class GooglePhotos(object):
         loop = True
         while loop:
             albums = self.service.albums().list(pageSize=50, pageToken=pageToken).execute()
-            for album in albums['albums']:
+            for album in albums.get('albums', []):
                 a.append(album)
 
             pageToken = albums.get('nextPageToken', '')
@@ -117,3 +117,8 @@ class GooglePhotos(object):
             return -fuzz.token_set_ratio(entry.lower(), a[0].lower())
 
         return sorted(albums, key=fuzzy_match_rating)[:n]
+
+if __name__ == "__main__":
+    GOOGLE_PHOTOS_SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
+    gp = GooglePhotos('./google_client_secret.json', GOOGLE_PHOTOS_SCOPES)
+    gp.get_albums()
