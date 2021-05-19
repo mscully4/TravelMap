@@ -16,6 +16,11 @@ class Table(object):
         resp = self.table.query(KeyConditionExpression=filtering_exp)
         return resp['Items']
 
+    def _get_item(self, partition_key_value, sort_key_value):
+        filtering_exp = Key(self.partition_key).eq(partition_key_value) & Key(self.sort_key).eq(sort_key_value)
+        resp = self.table.get_item(KeyConditionExpression=filtering_exp)
+        print(resp)
+
     def _put_item(self, data):
         resp = self.table.put_item(
             Item=data
@@ -60,6 +65,7 @@ class Table(object):
     def get(self, partition_key_value=None, sort_key_value=None):
         if sort_key_value:
             assert partition_key_value
+            # return self._get_item(partition_key_value=partition_key_value, sort_key_value=sort_key_value)
             return self._query_table(partition_key_value=partition_key_value, sort_key_value=sort_key_value)
         elif partition_key_value:
             resp = self._query_table(partition_key_value=partition_key_value)

@@ -83,6 +83,9 @@ class GooglePhotos(object):
         '''
         return self.service.albums().get(albumId=album_id).execute()
 
+    def get_album_cover_photo(self, album_id):
+        return self.get_album_info(album_id)['coverPhotoBaseUrl']
+
     def get_album_photos(self, album_id):
         '''
         A method for retrieivng urls for all the photos in an album

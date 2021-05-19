@@ -1,5 +1,6 @@
 import pprint
-class Entity(object):
+
+class O(object):
     '''This helper class provides property access (the "dot notation")
     to the json object, backed by the original object stored in the _raw
     field.
@@ -9,7 +10,6 @@ class Entity(object):
         self._raw = raw
 
     def __getattr__(self, key):
-        print(key)
         if key in self._raw:
             return self._raw[key]
         else:
@@ -23,27 +23,27 @@ class Entity(object):
 
 
 #DynamoDB Table Names
-TABLE_NAMES = Entity({
-    "CITIES": 'cities',
+TABLE_NAMES = O({
+    "DESTINATIONS": 'destinations',
     "PLACES": 'places',
     "ALBUMS": 'albums',
     "PHOTOS": 'photos'
 })
 
 #DynamoDB Table Keys
-TABLE_KEYS = Entity({
-    "CITIES": Entity({
-        "PARTITION_KEY": "place_id"
+TABLE_KEYS = O({
+    "DESTINATIONS": O({
+        "PARTITION_KEY": "destination_id"
     }),
-    "PLACES": Entity({
-        "PARTITION_KEY": "city_id",
+    "PLACES": O({
+        "PARTITION_KEY": "destination_id",
         "SORT_KEY": "place_id"
     }),
-    "ALBUMS": Entity({
-        "PARTITION_KEY": "place_id",
-        "SORT_KEY": "album_id",
+    "ALBUMS": O({
+        "PARTITION_KEY": "destination_id",
+        "SORT_KEY": "place_id",
     }),
-    "PHOTOS": Entity({
+    "PHOTOS": O({
         "PARTITION_KEY": "place_id",
         "SORT_KEY": "photo_id"
     })

@@ -1,12 +1,12 @@
 import utils as u
 import math
 
-def select_city(cities):
+def select_destination(destinations):
     # u.cls()
 
-    print('Select a city', '\n')
+    print('Select a destination', '\n')
     
-    _print_city_options(cities)
+    _print_destination_options(destinations)
 
     print()
 
@@ -16,13 +16,13 @@ def select_city(cities):
         # u.cls()
         return
 
-    selected_city = u.try_cast(inp, int) - 1
-    assert selected_city != None
-    assert 0 <= selected_city <= len(cities)
+    selected_destination = u.try_cast(inp, int) - 1
+    assert selected_destination != None
+    assert 0 <= selected_destination <= len(destinations)
 
     # u.cls()
 
-    return selected_city
+    return selected_destination
 
 def select_place(places):
     # u.cls()
@@ -53,13 +53,13 @@ def select_place(places):
     return selected_place
 
 
-def _print_city_options(cities):
-    half = math.ceil(len(cities) / 2)
+def _print_destination_options(destinations):
+    half = math.ceil(len(destinations) / 2)
 
     for i in range(half):
-        print("{0: <50}".format(str(i + 1) + ". " + cities[i]['city']), end='')
-        if i + half + 1 <= len(cities):
-            print("{0}".format(str(i + half + 1) + ". " + cities[i + half]['city']))
+        print("{0: <50}".format(str(i + 1) + ". " + destinations[i]['name']), end='')
+        if i + half + 1 <= len(destinations):
+            print("{0}".format(str(i + half + 1) + ". " + destinations[i + half]['name']))
         else:
             print()
 
@@ -74,9 +74,9 @@ def _print_place_options(places):
             print()
 
 
-def add_city(gm):
+def add_destination(gm):
     """
-    Adding a city to the dictionary
+    Adding a destination to the dictionary
 
     Args:
         None
@@ -87,7 +87,7 @@ def add_city(gm):
 
     u.cls()
 
-    print('Enter city name to use the autocomplete functionality.')
+    print('Enter destination name to use the autocomplete functionality.')
 
     inp = input('Input: ')
 
@@ -97,7 +97,7 @@ def add_city(gm):
         u.cls()
         return 0
 
-    ac = gm.get_city_suggestions(inp)
+    ac = gm.get_destination_suggestions(inp)
 
 
     if ac:
@@ -116,17 +116,17 @@ def add_city(gm):
         # If the user selects 0, go back to the input screen
         if sel == -1:
             u.cls()
-            add_city(gm)
+            add_destination(gm)
             return 0
         assert 0 <= sel <= len(s)
 
-        selected_city = s[sel]
-        return selected_city[1]
+        selected_destination = s[sel]
+        return selected_destination[1]
 
     else:
         u.cls()
 
-        print('City could not be found :(')
+        print('destination could not be found :(')
         print('Enter in the Place ID below (https://developers.google.com/maps/documentation/javascript/place-id)', '\n')
 
         inp = input('Place ID: ')
@@ -136,47 +136,19 @@ def add_city(gm):
 
         return inp
 
-def add_place(gm, cities, override_city=None):
+def add_place(gm, destination):
     """
     Adding a place to the dictionary
 
     Args:
-        override_city::[int] 
-            the ID of the city containing the place.  If not specified, the user will be prompted to select a city
+        override_destination::[int] 
+            the ID of the destination containing the place.  If not specified, the user will be prompted to select a destination
 
     Returns:
         None
     """
 
-    u.cls()
-    
-    if override_city == None: 
-        print('Select a city')
-
-        print()
-        
-        _print_city_options(cities)
-
-        print()
-
-        inp = input('Selection: ')
-
-        if inp == '\\':
-            u.cls()
-            return 
-
-        selected_city = u.try_cast(inp, int) - 1
-        assert selected_city != None
-        assert 0 <= selected_city <= len(cities)
-
-        u.cls()
-
-    else:
-        selected_city = override_city
-
-    city = cities[selected_city]
-
-    print('Selected City: {}'.format(city.get('city')))
+    print('Selected Destination: {}'.format(destination.name))
     print('Enter a place name to use the autocomplete functionality.')
 
     print()
@@ -188,7 +160,7 @@ def add_place(gm, cities, override_city=None):
         return 
 
     # # TODO pull this constant out
-    sugs = gm.get_place_suggestions(inp, location=[city['latitude'], city['longitude']])
+    sugs = gm.get_place_suggestions(inp, location=[destination.latitude, destination.longitude])
 
     print()
 
@@ -208,23 +180,24 @@ def add_place(gm, cities, override_city=None):
     assert selection != None
     if selection == -1:
         u.cls()
-        add_place(gm, cities, selected_city)
+        add_place(gm, destination)
         return
     assert 0 <= selection <= 4
 
     # Geocode the place and fill in some info
-    place = gm.geocode_place(ac=sugs[selection])
-    place['city'] = city['city']
-    place['city_id'] = city['place_id']
-    return place
+    return gm.geocode_place(ac=sugs[selection])
 
-def add_album(gp, city, place, allow_add_another=True):
+
+def override_album():
+    return input('Use existing Album ID? (y/n): ').lower() in ('y', 'yes')
+
+def add_album(gp, destination, place, allow_add_another=True):
     """
     Download photos from a Google Photos album and add them to a place
 
     Args:
-        override_city::[int] 
-            the ID of the city containing the place.  If not specified, the user will be prompted to select a city
+        override_destination::[int] 
+            the ID of the destination containing the place.  If not specified, the user will be prompted to select a destination
 
         override_place::[int]
             the ID of the place.  If not specified the user will be prompted to select a place
@@ -237,7 +210,7 @@ def add_album(gp, city, place, allow_add_another=True):
     """
 
     #Get album name
-    album_name = u.rlinput('Search for albums: ', f"{city.city} -- {place.name}")
+    album_name = u.rlinput('Search for albums: ', f"{destination.name} -- {place.name}")
 
     if album_name == '\\':
         u.cls()
@@ -266,25 +239,31 @@ def add_album(gp, city, place, allow_add_another=True):
     #If the user entered 0, go back
     if selection == -1:
         u.cls()
-        add_album(gp, city=city, place=place)
+        add_album(gp, destination=destination, place=place)
         return
     assert 0 <= selection < len(suggestions)
 
+    album_id = suggestions[selection][1]
+
+    metadata = gp.get_album_info(album_id)
+
     u.cls()
-    print(suggestions[selection])
 
     return {
+        "place_id": place.place_id,
+        "destination_id": destination.destination_id,
         "album_id": suggestions[selection][1],
-        "place_id": place.place_id 
+        "title": metadata.get('title'),
+        'cover_photo_id': metadata.get('coverPhotoMediaItemId')
     }
 
-def edit_city(city):
+def edit_destination(destination):
     """
-    Editing the information of a city in the dictionary
+    Editing the information of a destination in the dictionary
 
     Args:
-        override_city::[int] 
-            the ID of the city containing the place.  If not specified, the user will be prompted to select a city
+        override_destination::[int] 
+            the ID of the destination containing the place.  If not specified, the user will be prompted to select a destination
 
     Returns:
         None
@@ -292,27 +271,27 @@ def edit_city(city):
 
     u.cls()
 
-    for k, v in city.__dict__.items():
+    for k, v in destination.__dict__.items():
         inp = u.rlinput('{}: '.format(k), str(v))
         
         inp_as_float = u.try_cast(inp, float)        
         if inp_as_float != None:
             #If the input is a number, save it as a float or int
-            city.__dict__[k] = inp_as_float if '.' in inp else int(inp) 
+            destination.__dict__[k] = inp_as_float if '.' in inp else int(inp) 
             #if the input is a string, save it as such
         
         elif isinstance(v, str):
-            city.__dict__[k] = inp
+            destination.__dict__[k] = inp
         
-    return city
+    return destination
 
 def edit_place(place):
     """
-    Editing the information of a city in the dictionary
+    Editing the information of a destination in the dictionary
 
     Args:
-        override_city::[int] 
-            the ID of the city containing the place.  If not specified, the user will be prompted to select a city
+        override_destination::[int] 
+            the ID of the destination containing the place.  If not specified, the user will be prompted to select a destination
 
     Returns:
         None
@@ -333,41 +312,3 @@ def edit_place(place):
             place.__dict__[k] = inp
         
     return place
-
-def delete_city(self):
-    """
-    Deleting a city from the dictionary
-
-    Args:
-        None
-
-    Returns:
-        None
-    """
-
-    u.cls()
-
-    print('Select a city to delete')
-    
-    print()
-    
-    _print_city_options()
-
-    print()
-
-    inp = input('Selection: ')
-
-    if inp == '\\':
-        u.cls()
-        return
-
-    selected_city = u.try_cast(inp, int) - 1
-    assert selected_city != None
-    assert 0 <= selected_city <= len(self.data['destinations'])
-
-    #Delete the City from the dictionary
-    del self.data['destinations'][selected_city]
-
-    self.overwrite()
-
-    u.cls()

@@ -8,9 +8,12 @@ class Album(object):
     field.
     '''
 
-    def __init__(self, album_id, place_id):
+    def __init__(self, destination_id, place_id, album_id, cover_photo_id, title):
+        self.destination_id = destination_id
         self.album_id = album_id
         self.place_id = place_id
+        self.cover_photo_id = cover_photo_id
+        self.title = title
 
     # def __repr__(self):
     #     return '{name}({raw})'.format(
@@ -29,6 +32,9 @@ class Album(object):
 
     def serialize(self):
         return {
-            "album_id": self.album_id,
+            "destination_id": self.destination_id,
             "place_id": self.place_id,
+            "album_id": self.album_id,
+            "cover_photo_id": self.cover_photo_id,
+            "title": self.title
         }

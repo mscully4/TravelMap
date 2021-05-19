@@ -6,15 +6,17 @@ import requests
 import io
 
 class Photo:
-    def __init__(self, id, place_id, productUrl, mimeType, mediaMetadata, city_id, **kwargs):
-        self.photo_id = id
+    def __init__(self, photo_id=None, place_id=None, destination_id=None, mimeType=None, height=None, width=None, creation_timestamp=None, **kwargs):
+        self.photo_id = photo_id if photo_id else kwargs.get('id', None)
         self.place_id = place_id
-        self.url = productUrl
-        self.type = mimeType
-        self.height = mediaMetadata.get('height', None)
-        self.width = mediaMetadata.get('width', None)
-        self.creation_timestamp = mediaMetadata.get('creationTime', None)
-        self.city_id = city_id
+        self.destination_id = destination_id
+        # self.url = url if url else kwargs.get('productUrl', None)
+        self.mimeType = mimeType
+        self.height = height if height else kwargs.get('mediaMetadata', {}).get('height', None)
+        self.width = width if width else kwargs.get('mediaMetadata', {}).get('width', None)
+        self.creation_timestamp = creation_timestamp if creation_timestamp else kwargs.get('mediaMetadata', {}).get('creationTime', None)
+
+        assert self._is_valid()
 
         self._buffer = io.BytesIO()
         self._s3_url = None
@@ -24,6 +26,11 @@ class Photo:
             name=self.__class__.__name__,
             raw=pprint.pformat(self.__dict__, indent=4),
         )
+
+    def _is_valid(self):
+        if self.photo_id and self.place_id and self.destination_id:
+            return True 
+        return False
 
     def _rescale(self, image, max_size=2048):
         width, height = image.size
@@ -38,8 +45,8 @@ class Photo:
 
         return image
 
-    def download(self):
-        r = requests.get(self.url + '=d')
+    def download(self, url):
+        r = requests.get(url + '=d')
         r.raw.decode_content = True # handle spurious Content-Encoding
 
         #Save the file contents to a variable
@@ -59,13 +66,16 @@ class Photo:
     
 
     def write(self, s3):
+        print(dir(self._buffer))
         file_name = self.photo_id + ".png"
-        file_path = "{}/{}/{}".format('images', self.city_id, self.place_id).replace(" ", "_")
+        file_path = f"images/{self.destination_id}/{self.place_id}/{file_name}".replace(" ", "_")
 
         # if not self.does_image_exist(file_path + file_name):
             #Write the image to S3
+        print(file_path)
         resp = s3.write_image_to_s3(file_path + file_name, self._buffer, ACL='public-read', ContentType='image/png')
         self._s3_url = file_path + file_name
+        return resp
 
 
     def serialize(self):
@@ -74,7 +84,7 @@ class Photo:
             "place_id": self.place_id,
             "photo_id": self.photo_id,
             "url": self._s3_url,
-            "type": self.type,
+            "type": self.mimeType,
             "height": self.height,
             "width": self.width,
             "creation_timestamp": self.creation_timestamp,

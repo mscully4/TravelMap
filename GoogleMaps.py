@@ -4,7 +4,7 @@ class GoogleMaps(object):
     def __init__(self, api_key):
         self.gm = gm.Client(key=api_key)
 
-    def get_city_suggestions(self, text):
+    def get_destination_suggestions(self, text):
         '''
         A method for autocompleting city names given a text entry
 
@@ -27,7 +27,7 @@ class GoogleMaps(object):
         res = self.gm.places_autocomplete(text, location=location, radius=radius)
         return res        
 
-    def geocode_city(self, place_id):
+    def geocode_destination(self, place_id):
         '''
         A method for retrieving information about a city given its place_id
 
@@ -45,12 +45,12 @@ class GoogleMaps(object):
                 country_code = comp['short_name']
 
         data = {
-            'city': s['address_components'][0]['long_name'],
+            'name': s['address_components'][0]['long_name'],
             'country': country,
             'country_code': country_code,
             'latitude': s['geometry']['location']['lat'],
             'longitude': s['geometry']['location']['lng'],
-            'place_id': place_id
+            'destination_id': place_id
         }
         return data
 

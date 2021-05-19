@@ -4,9 +4,8 @@ import argparse
 
 # from utils.constants import TABLE_NAMES, TABLE_KEYS
 import os 
-print(os.getcwd())
-from constants import *
-from Objects.City import City
+from constants import TABLE_NAMES, TABLE_KEYS
+from Objects.Destination import Destination
 from Objects.Place import Place
 from Objects.Album import Album
 from Objects.Photo import Photo
@@ -45,18 +44,18 @@ if __name__ == '__main__':
 
     db = create_dynamo_resource()
 
-    cities_table = Table(
-        create_dynamo_table_client(db, TABLE_NAMES.CITIES), 
-        partition_key=TABLE_KEYS.CITIES.PARTITION_KEY
+    destinations_table = Table(
+        create_dynamo_table_client(db, TABLE_NAMES.DESTINATIONS), 
+        partition_key=TABLE_KEYS.DESTINATIONS.PARTITION_KEY
     )
     places_table = Table(
         create_dynamo_table_client(db, TABLE_NAMES.PLACES), 
         partition_key=TABLE_KEYS.PLACES.PARTITION_KEY, 
         sort_key=TABLE_KEYS.PLACES.SORT_KEY
     )
-    album_table = Table(
+    albums_table = Table(
         create_dynamo_table_client(db, TABLE_NAMES.ALBUMS), 
-        partition_key=TABLE_KEYS.PLACES.PARTITION_KEY, 
+        partition_key=TABLE_KEYS.ALBUMS.PARTITION_KEY, 
         sort_key=TABLE_KEYS.ALBUMS.SORT_KEY
     )
     photos_table = Table(
@@ -72,12 +71,12 @@ if __name__ == '__main__':
         print('Main Menu\n')
 
         print('0. To Exit')
-        print('1. Enter a new city')
+        print('1. Enter a new destination')
         print('2. Enter a new place')
         print('3. Add an album to a place')
-        print('4. Edit a city')
+        print('4. Edit a destination')
         print('5. Edit a place')
-        print('6. Delete a city')
+        print('6. Delete a destination')
         print('7. Delete a place')
         print('8. Upload Photos')
         print('9. Upload Album Cover')
@@ -95,16 +94,19 @@ if __name__ == '__main__':
             run = False
         elif selection == 1:
             #Add City
-            place_id = CLI.add_city(gm)
-            data = gm.geocode_city(place_id)
-            if data['place_id'] not in cities_table.get_keys():
-                cities_table.insert(City(**data))
+            place_id = CLI.add_destination(gm)
+            data = gm.geocode_destination(place_id)
+            if data['destination_id'] not in destinations_table.get_keys():
+                destinations_table.insert(Destination(**data))
             else:
                 print("City already exists")
         elif selection == 2:
             #Add Place to City
-            cities = cities_table.get()
-            data = CLI.add_place(gm, cities)
+            destinations = destinations_table.get()
+            destination = Destination(**destinations[CLI.select_destination(destinations)])
+            data = CLI.add_place(gm, destination)
+            data['destination_id'] = destination.destination_id
+            data['city'] = destination.name
             if data['place_id'] not in places_table.get_keys():
                 places_table.insert(Place(**data))
             else:
@@ -112,50 +114,77 @@ if __name__ == '__main__':
 
         elif selection == 3:
             #Add Album to Place
-            cities = cities_table.get()
-            city = City(**cities[CLI.select_city(cities)])
+            destinations = destinations_table.get()
+            destination = Destination(**destinations[CLI.select_destination(destinations)])
 
-            places = places_table.get(partition_key_value=city.place_id)
+            places = places_table.get(partition_key_value=destination.destination_id)
             place = Place(**places[CLI.select_place(places)])
 
-            album = Album(**CLI.add_album(gp, city, place))
-            album_table.insert(album)
+            try:
+                album = Album(**albums_table.get(partition_key_value=destination.destination_id, sort_key_value=place.place_id)[0])
+            except:
+                album = None
+            
+            if not album or CLI.override_album() == False:
+                album = Album(**CLI.add_album(gp, destination, place))
+                albums_table.insert(album)
+
             photos = gp.get_album_photos(album.album_id)
             if photos:
-                for p in photos:
-                    p['city_id'] = city.place_id
-                    p['place_id'] = place.place_id
-                    photo = Photo(**p)
+                for obj in photos:
+                    print(obj)
+                    photo = Photo(destination_id=destination.destination_id, place_id=place.place_id, **obj)
+                    photo.download(obj.get('baseUrl'))
                     photo.write(s3)
                     photos_table.insert(photo)
 
         elif selection == 4:
             #Edit City
-            cities = cities_table.get()
-            city = City(**cities[CLI.select_city(cities)])
-            CLI.edit_city(city)
-            cities_table.update(city)
+            destinations = destinations_table.get()
+            destination = Destination(**destinations[CLI.select_destination(destinations)])
+            CLI.edit_destination(destination)
+            destinations_table.update(destination)
         elif selection == 5:
             #Edit Place
-            cities = cities_table.get()
-            city = City(**cities[CLI.select_city(cities)])
-            places = places_table.get(partition_key_value=city.place_id)
+            destinations = destinations_table.get()
+            destination = Destination(**destinations[CLI.select_destination(destinations)])
+            places = places_table.get(partition_key_value=destination.destination_id)
             place = Place(**places[CLI.select_place(places)])
             CLI.edit_place(place)
             places_table.update(place)
         elif selection == 6:
             #Delete a City
-            cities = cities_table.get()
-            city = City(**cities[CLI.select_city(cities)])
-            cities_table.delete(city)
+            destinations = destinations_table.get()
+            destination = Destination(**destinations[CLI.select_destination(destinations)])
+            destinations_table.delete(destination)
         elif selection == 7:
             #Delete a Place
-            cities = cities_table.get()
-            city = City(**cities[CLI.select_city(cities)])
-            places = places_table.get(partition_key_value=city.place_id)
+            destinations = destinations_table.get()
+            destination = Destination(**destinations[CLI.select_destination(destinations)])
+            places = places_table.get(partition_key_value=destination.destination_id)
             place = Place(**places[CLI.select_place(places)])
             places_table.delete(place)
         # elif selection == 8:
-        #     self.upload_photos()
+        #     destinations = destinations_table.get()
+        #     destination = City(**destinations[CLI.select_destination(destinations)])
+
+        #     places = places_table.get(partition_key_value=destination.place_id)
+        #     place = Place(**places[CLI.select_place(places)])
+
+        #     album = albums_table.get(partition_key_value=destination.place_id, sort_key_value=place.place_id)
+        #     photos = photos_table.get(partition_key_value=place.place_id)
+        #     for obj in photos:
+        #         print(obj)
+        #         photo = Photo(**obj)
+        #         photo.download()
+        #         photo.write(s3)
         # elif selection == 9:
-        #     self.upload_cover_photo()
+        #     destinations = destinations_table.get()
+        #     destination = City(**destinations[CLI.select_destination(destinations)])
+            
+        #     places = places_table.get(partition_key_value=destination.place_id)
+        #     place = Place(**places[CLI.select_place(places)])
+
+        #     album = Album(**albums_table.get(partition_key_value=destination.place_id, sort_key_value=place.place_id)[0])
+        #     gp.get_album_info(album.album_id)
+            # CLI.upload_cover_photo(gp, destination, place)
