@@ -1,5 +1,6 @@
 import json 
 import boto3
+import botocore
 
 class S3:
     def __init__(self, bucket_name, region):
@@ -7,11 +8,24 @@ class S3:
         self.s3_resource = boto3.resource('s3')
         self.bucket_name = bucket_name
         self.region = region
-        self.base_url = 'https://{}.s3.{}.amazonaws.com/'.format(self.bucket_name, self.region)
+        self.base_url = 'https://{}.s3.{}.amazonaws.com'.format(self.bucket_name, self.region)
 
     def write_image_to_s3(self, file_name, img, **kwargs):
         resp = self.s3_resource.Object(self.bucket_name, file_name).put(Body=img, **kwargs)
-        return resp['ResponseMetadata']['HTTPStatusCode']
+        assert resp['ResponseMetadata']['HTTPStatusCode'], "Upload Failed"
+        return f"{self.base_url}/{file_name}"
+
+    def does_image_exist(self, file_name):
+        try:
+            self.s3_resource.Object(self.bucket_name, file_name).load()
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == "404":
+            # The object does not exist.
+                return False
+            else:
+                return True
+        else:
+            return True
 
 # def upload_file(file_name, bucket, object_name=None):
 #     """Upload a file to an S3 bucket

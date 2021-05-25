@@ -29,6 +29,22 @@ class Table(object):
         assert resp['ResponseMetadata']['HTTPStatusCode'] == 200
         return True
 
+    # def _append_to_list(self, data):
+    #     key = {
+    #         'hash_key': data.get(self.partition_key),
+    #     }
+    #     if self.sort_key:
+    #         key['range_key'] = data.get(self.sort_key)
+
+    #     resp = self.table.update_item(
+    #         Key=key,       
+    #         UpdateExpression="SET some_attr = list_append(photos, :i)",
+    #         ExpressionAttributeValues={
+    #             ':i': data["list"],
+    #         },
+    #     )
+    #     return resp
+
     def _delete_item(self, data):
         key = {
             self.partition_key: data.__dict__[self.partition_key]
@@ -66,7 +82,8 @@ class Table(object):
         if sort_key_value:
             assert partition_key_value
             # return self._get_item(partition_key_value=partition_key_value, sort_key_value=sort_key_value)
-            return self._query_table(partition_key_value=partition_key_value, sort_key_value=sort_key_value)
+            resp = self._query_table(partition_key_value=partition_key_value, sort_key_value=sort_key_value)
+            return resp[0] if resp else None
         elif partition_key_value:
             resp = self._query_table(partition_key_value=partition_key_value)
             return resp
@@ -76,6 +93,8 @@ class Table(object):
     def insert(self, obj):
         if hasattr(obj, "serialize"):
             self._put_item(obj.serialize())
+        else:
+            self._put_item(obj)
 
     def update(self, obj):
         if hasattr(obj, "serialize"):
@@ -84,3 +103,22 @@ class Table(object):
     def delete(self, obj):
         if hasattr(obj, "serialize"):
             self._delete_item(obj.serializa())
+
+# if __name__ == "__main__":
+#     from DynamoDB import create_dynamo_resource, create_dynamo_table_client
+
+#     from constants import TABLE_KEYS, TABLE_NAMES
+#     db = create_dynamo_resource()
+#     photos_table = Table(
+#         create_dynamo_table_client(db, TABLE_NAMES.PHOTOS), 
+#         partition_key=TABLE_KEYS.PHOTOS.PARTITION_KEY, 
+#         sort_key=TABLE_KEYS.PHOTOS.SORT_KEY
+#     )
+
+#     resp = photos_table.table.put_item(                        
+#         Item={
+#             "destination_id": "boof",
+#             "place_id": "chrok",
+#             "photos": ({}, {})
+#             }
+#     )

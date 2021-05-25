@@ -1,5 +1,6 @@
 import utils as u
 import math
+import asyncio
 
 def select_destination(destinations):
     # u.cls()
@@ -15,6 +16,9 @@ def select_destination(destinations):
     if inp == '\\':
         # u.cls()
         return
+
+    if inp == "*":
+        return inp
 
     selected_destination = u.try_cast(inp, int) - 1
     assert selected_destination != None
@@ -191,7 +195,10 @@ def add_place(gm, destination):
 def override_album():
     return input('Use existing Album ID? (y/n): ').lower() in ('y', 'yes')
 
-def add_album(gp, destination, place, allow_add_another=True):
+def ask_true_false_question(text):
+    return input(text).lower() in ('y', 'yes')
+
+async def add_album(gp, destination, place, albums, allow_add_another=True):
     """
     Download photos from a Google Photos album and add them to a place
 
@@ -217,7 +224,10 @@ def add_album(gp, destination, place, allow_add_another=True):
         return
 
     # #Get suggestions from Google Photos, limit to 5
-    suggestions = gp.get_album_suggestions(gp.get_albums(), album_name, 5)
+    if not gp.done:
+        await gp.albums
+    albums = gp.albums
+    suggestions = gp.get_album_suggestions(albums, album_name, 5)
 
     print()
 
@@ -245,17 +255,17 @@ def add_album(gp, destination, place, allow_add_another=True):
 
     album_id = suggestions[selection][1]
 
-    metadata = gp.get_album_info(album_id)
+    return gp.get_album_info(album_id)
 
-    u.cls()
+    # u.cls()
 
-    return {
-        "place_id": place.place_id,
-        "destination_id": destination.destination_id,
-        "album_id": suggestions[selection][1],
-        "title": metadata.get('title'),
-        'cover_photo_id': metadata.get('coverPhotoMediaItemId')
-    }
+    # return {
+    #     "place_id": place.place_id,
+    #     "destination_id": destination.destination_id,
+    #     "album_id": suggestions[selection][1],
+    #     "title": metadata.get('title'),
+    #     'cover_photo_id': metadata.get('coverPhotoMediaItemId')
+    # }
 
 def edit_destination(destination):
     """

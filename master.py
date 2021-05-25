@@ -16,16 +16,38 @@ from DynamoDB import create_dynamo_resource, create_dynamo_table_client
 import DynamoDB as ddb
 import CLI
 from S3 import S3
+import asyncio
 
 import utils
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config-file', required=True, type=str, help="The path to the config file")
-    parser.add_argument('-p', '--google-photos-secret', required=True, type=str, help="The path to the Google Photos Secret file")
+def upload_cover_photo(destination_id, place_id, album_id, **kwargs):
+    album = Album(destination_id, place_id, album_id, **gp.get_album_info(album_id))
+    cover_photo = Photo(photo_id=album.cover_photo_id, place_id=place_id, destination_id=destination_id)
+    cover_photo.download(url=album.cover_photo_download_url, is_cover_image=True)
+    album.cover_photo_src = cover_photo.write(s3)
+    albums_table.insert(album)
 
-    args = vars(parser.parse_args())
+def upload_photos(photos_table, album_id, destination_id, place_id):
+    photos = gp.get_album_photos(album_id)
+    l = []
+    if photos:
+        for i, obj in enumerate(photos):
+            # utils.cls()
+            print(f"{i} out of {len(photos)} photos uploaded")
+            photo = Photo(destination_id=destination_id, place_id=place_id, **obj)
+            photo.download(obj.get('baseUrl'))
+            photo.write(s3)
+            l.append(photo.serialize())
     
+    obj = {
+        "destination_id": destination_id,
+        "place_id": place_id,
+        "photos": l
+        }
+
+    photos_table.insert(obj)
+
+async def main(args):
     #Retrieving keys from config file
     assert os.path.exists(args['config_file'])
     config = cp.ConfigParser()
@@ -89,6 +111,7 @@ if __name__ == '__main__':
         assert selection != None
         assert 0 <= selection <= 9
 
+        utils.cls()
         if selection == 0:
             #Exit
             run = False
@@ -126,17 +149,23 @@ if __name__ == '__main__':
                 album = None
             
             if not album or CLI.override_album() == False:
-                album = Album(**CLI.add_album(gp, destination, place))
+                album = Album(destination_id=destination.destination_id, place_id=place.place_id, **CLI.add_album(gp, destination, place))
+                cover_photo = Photo(photo_id=album.cover_photo_id, place_id=place.place_id, destination_id=destination.destination_id)
+                cover_photo.download(url=album.cover_photo_download_url, is_cover_image=True)
+                album.cover_photo_src = cover_photo.write(s3)
                 albums_table.insert(album)
 
-            photos = gp.get_album_photos(album.album_id)
-            if photos:
-                for obj in photos:
-                    print(obj)
-                    photo = Photo(destination_id=destination.destination_id, place_id=place.place_id, **obj)
-                    photo.download(obj.get('baseUrl'))
-                    photo.write(s3)
-                    photos_table.insert(photo)
+            if CLI.ask_true_false_question("Would you like to upload photos? (y/n): "):
+                upload_photos(photos_table, album.album_id, destination.destination_id, place.place_id)
+            # photos = gp.get_album_photos(album.album_id)
+            # if photos:
+            #     for i, obj in enumerate(photos):
+            #         # utils.cls()
+            #         print(f"{i} out of {len(photos)} photos uploaded")
+            #         photo = Photo(destination_id=destination.destination_id, place_id=place.place_id, **obj)
+            #         photo.download(obj.get('baseUrl'))
+            #         photo.write(s3)
+            #         photos_table.insert(photo)
 
         elif selection == 4:
             #Edit City
@@ -164,23 +193,55 @@ if __name__ == '__main__':
             places = places_table.get(partition_key_value=destination.destination_id)
             place = Place(**places[CLI.select_place(places)])
             places_table.delete(place)
-        # elif selection == 8:
-        #     destinations = destinations_table.get()
-        #     destination = City(**destinations[CLI.select_destination(destinations)])
+        elif selection == 8:
+            destinations = destinations_table.get()
+            sel = CLI.select_destination(destinations)
+            if sel == "*":
+                pass
+            else:
+                destination = Destination(**destinations[sel])
 
-        #     places = places_table.get(partition_key_value=destination.place_id)
-        #     place = Place(**places[CLI.select_place(places)])
+                places = places_table.get(partition_key_value=destination.destination_id)
+                sel = CLI.select_place(places)
 
-        #     album = albums_table.get(partition_key_value=destination.place_id, sort_key_value=place.place_id)
-        #     photos = photos_table.get(partition_key_value=place.place_id)
-        #     for obj in photos:
-        #         print(obj)
-        #         photo = Photo(**obj)
-        #         photo.download()
-        #         photo.write(s3)
-        # elif selection == 9:
-        #     destinations = destinations_table.get()
-        #     destination = City(**destinations[CLI.select_destination(destinations)])
+                if sel == "*":
+                    pass
+                else:
+                    place = Place(**places[sel])
+
+                    album = Album(**albums_table.get(partition_key_value=destination.destination_id, sort_key_value=place.place_id))
+                    photos = gp.get_album_photos(album.album_id)
+                    if photos:
+                        for i, obj in enumerate(photos):
+                            # utils.cls()
+                            print(f"{i} out of {len(photos)} photos uploaded")
+                            photo = Photo(destination_id=destination.destination_id, place_id=place.place_id, **obj)
+                            photo.download(obj.get('baseUrl'))
+                            photo.write(s3)
+                            photos_table.insert(photo)
+
+        elif selection == 9:
+            destinations = destinations_table.get()
+            sel = CLI.select_destination(destinations)
+            if sel == "*":
+                albums = albums_table.get()
+                for i, album in enumerate(albums):
+                    print(f"{i} out of {len(albums)} cover photos uploaded")
+                    upload_cover_photo(**album)
+            else:
+                destination = Destination(**destinations[sel])
+                places = places_table.get(partition_key_value=destination.destination_id)
+                sel = CLI.select_place(places)
+                if sel == "*":
+                    albums = albums_table.get(partition_key_value=destination.destination_id)
+                    for i, album in enumerate(albums):
+                        print(f"{i} out of {len(albums)} cover photos uploaded")
+                        upload_cover_photo(**album)
+                else:
+                    place = Place(**places[sel])
+                    album = albums_table.get(partition_key_value=destination.destination_id, sort_key_value=place.place_id)
+                    upload_cover_photo(**album)
+
             
         #     places = places_table.get(partition_key_value=destination.place_id)
         #     place = Place(**places[CLI.select_place(places)])
@@ -188,3 +249,11 @@ if __name__ == '__main__':
         #     album = Album(**albums_table.get(partition_key_value=destination.place_id, sort_key_value=place.place_id)[0])
         #     gp.get_album_info(album.album_id)
             # CLI.upload_cover_photo(gp, destination, place)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config-file', required=True, type=str, help="The path to the config file")
+    parser.add_argument('-p', '--google-photos-secret', required=True, type=str, help="The path to the Google Photos Secret file")
+
+    args = vars(parser.parse_args())
+    asyncio.get_event_loop().run_until_complete(main(args))

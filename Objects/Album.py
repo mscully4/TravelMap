@@ -8,18 +8,20 @@ class Album(object):
     field.
     '''
 
-    def __init__(self, destination_id, place_id, album_id, cover_photo_id, title):
+    def __init__(self, destination_id, place_id, album_id=None, cover_photo_id=None, title=None, **kwargs):
         self.destination_id = destination_id
-        self.album_id = album_id
         self.place_id = place_id
-        self.cover_photo_id = cover_photo_id
+        self.album_id = album_id if album_id else kwargs.get("id", None)
+        self.cover_photo_id = cover_photo_id if cover_photo_id else kwargs.get("coverPhotoMediaItemId", None)
         self.title = title
+        self.cover_photo_download_url = kwargs.get('coverPhotoBaseUrl', "")
+        self.cover_photo_src = None 
 
-    # def __repr__(self):
-    #     return '{name}({raw})'.format(
-    #         name=self.__class__.__name__,
-    #         raw=pprint.pformat(self.__dict__, indent=4),
-    #     )
+    def __repr__(self):
+        return '{name}({raw})'.format(
+            name=self.__class__.__name__,
+            raw=pprint.pformat(self.__dict__, indent=4),
+        )
 
     # @property
     # def city(self):
@@ -36,5 +38,6 @@ class Album(object):
             "place_id": self.place_id,
             "album_id": self.album_id,
             "cover_photo_id": self.cover_photo_id,
+            "cover_photo_src": self.cover_photo_src,
             "title": self.title
         }

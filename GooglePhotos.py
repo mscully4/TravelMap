@@ -6,11 +6,14 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.auth.transport.requests import Request
 from fuzzywuzzy import fuzz
+import asyncio
+
 
 class GooglePhotos(object):
     def __init__(self, client_secret_file, scopes):
         self.service = self.Create_Service(client_secret_file, 'photoslibrary', 'v1', scopes)
-        self.albums = None
+        self.albums = asyncio.get_event_loop().create_task(self.get_albums())
+        self.done = None
 
 
     def Create_Service(self, client_secret_file, api_name, api_version, *scopes):
@@ -40,7 +43,7 @@ class GooglePhotos(object):
         except Exception as e:
             print(e)
 
-    def get_albums(self):
+    async def get_albums(self):
         '''
         A method for retrieving all the Google Photos albums for a user
 
@@ -60,6 +63,7 @@ class GooglePhotos(object):
             if pageToken == '':
                 loop = False
 
+        self.done = True
         return a
 
     def get_album_id(self, album_name):
@@ -82,9 +86,6 @@ class GooglePhotos(object):
             <dict>: A dictionary of album metadata
         '''
         return self.service.albums().get(albumId=album_id).execute()
-
-    def get_album_cover_photo(self, album_id):
-        return self.get_album_info(album_id)['coverPhotoBaseUrl']
 
     def get_album_photos(self, album_id):
         '''
@@ -124,4 +125,4 @@ class GooglePhotos(object):
 if __name__ == "__main__":
     GOOGLE_PHOTOS_SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
     gp = GooglePhotos('./google_client_secret.json', GOOGLE_PHOTOS_SCOPES)
-    gp.get_albums()
+    print(gp.albums)

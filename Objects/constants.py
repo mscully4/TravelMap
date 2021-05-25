@@ -48,4 +48,3 @@ TABLE_KEYS = O({
         "SORT_KEY": "place_id"
     })
 })
-
