@@ -2,12 +2,12 @@ import utils as u
 import math
 import asyncio
 
-def select_destination(destinations):
+def _select_from_list(lst, context):
     # u.cls()
 
-    print('Select a destination', '\n')
+    print(f'Select a {context}', '\n')
     
-    _print_destination_options(destinations)
+    _print_numbered_list(lst)
 
     print()
 
@@ -20,63 +20,46 @@ def select_destination(destinations):
     if inp == "*":
         return inp
 
-    selected_destination = u.try_cast(inp, int) - 1
-    assert selected_destination != None
-    assert 0 <= selected_destination <= len(destinations)
+    sel = u.try_cast(inp, int) - 1
+    assert sel != None
+    assert 0 <= sel <= len(lst)
 
     # u.cls()
 
-    return selected_destination
+    return sel
 
-def select_place(places):
-    # u.cls()
+def _print_double_list(lst):
+    half = math.ceil(len(lst) / 2)
 
-    print('Select a place', '\n')
-
-    _print_place_options(places)
-
-    print()
-
-    sel = input('Selection: ')
-
-    if sel == '\\':
-        # u.cls()
-        return
-
-    selected_place = u.try_cast(sel, int) - 1
-    assert selected_place != None
-    #If the user selects 0, go back
-    if selected_place == -1:
-        # u.cls()
-        select_place(places)
-        return 0 
-    assert 0 <= selected_place < len(places)
-
-    u.cls()
-
-    return selected_place
-
-
-def _print_destination_options(destinations):
-    half = math.ceil(len(destinations) / 2)
-
+    print('0. Go Back')
     for i in range(half):
-        print("{0: <50}".format(str(i + 1) + ". " + destinations[i]['name']), end='')
-        if i + half + 1 <= len(destinations):
-            print("{0}".format(str(i + half + 1) + ". " + destinations[i + half]['name']))
+        print("{0: <50}".format(str(i + 1) + ". " + lst[i].name), end='')
+        if i + half + 1 <= len(lst):
+            print("{0}".format(str(i + half + 1) + ". " + lst[i + half].name))
         else:
             print()
 
-def _print_place_options(places):
-    half = math.ceil(len(places) / 2)
+def _get_selection(minimum, maximum):
+    selection = input('Selection: ')
 
-    for i in range(half):
-        print("{0: <35}".format(str(i + 1) + ". " + places[i]['name']), end='')
-        if i + half + 1 <= len(places):
-            print("{0}".format(str(i + half + 1) + ". " + places[i + half]['name']))
-        else: 
-            print()
+    selection = u.try_cast(selection, int) 
+    assert selection != None
+    assert minimum <= selection <= maximum
 
+    return selection
+
+def get_input(msg):
+    # u.cls()
+
+    print(msg)
+
+    inp = input('Input: ')
+    return inp
+
+def print_single_list(sugs):
+    print('0. Go Back')
+    for i, sug in enumerate(sugs):
+        print(f"{i+1}. {sug}")
 
 def add_destination(gm):
     """
@@ -163,33 +146,35 @@ def add_place(gm, destination):
         u.cls()
         return 
 
-    # # TODO pull this constant out
+    #TODO pull this constant out
     sugs = gm.get_place_suggestions(inp, location=[destination.latitude, destination.longitude])
 
     print()
 
     print('0. Go Back')
     for i, sug in enumerate(sugs):
-        print("{}. {}".format(i + 1, sug['structured_formatting'].get('main_text', "") + " " + sug['structured_formatting'].get('secondary_text', "")))
+        print(
+            f"{i+1}. {sug['structured_formatting'].get('main_text', '')} {sug['structured_formatting'].get('secondary_text', '')}"
+            )
 
     print()
 
-    selection = input('Selection: ')
+    sel = input('Selection: ')
 
-    if selection == '\\':
+    if sel == '\\':
         u.cls()
         return 0
 
-    selection = u.try_cast(selection, int) - 1
-    assert selection != None
-    if selection == -1:
+    sel = u.try_cast(sel, int) - 1
+    assert sel != None
+    if sel == -1:
         u.cls()
         add_place(gm, destination)
         return
-    assert 0 <= selection <= 4
+    assert 0 <= sel <= 4
 
     # Geocode the place and fill in some info
-    return gm.geocode_place(ac=sugs[selection])
+    return sugs[sel]['place_id']
 
 
 def override_album():

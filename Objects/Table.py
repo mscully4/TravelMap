@@ -2,10 +2,16 @@ import pprint
 from boto3.dynamodb.conditions import Key
 
 class Table(object):
-    def __init__(self, table, partition_key, sort_key=None):
+    def __init__(self, table, type_, partition_key, sort_key=None):
         self.table = table
         self.partition_key = partition_key
         self.sort_key = sort_key
+        self.type = type_
+
+    def _scan_table(self):
+        resp = self.table.scan()
+        return [self.type(**item) for item in resp['Items']]
+
 
     def _query_table(self, partition_key_value=None, sort_key_value=None):
         assert partition_key_value != None
@@ -14,12 +20,7 @@ class Table(object):
             assert self.sort_key
             filtering_exp = filtering_exp & Key(self.sort_key).eq(sort_key_value)
         resp = self.table.query(KeyConditionExpression=filtering_exp)
-        return resp['Items']
-
-    def _get_item(self, partition_key_value, sort_key_value):
-        filtering_exp = Key(self.partition_key).eq(partition_key_value) & Key(self.sort_key).eq(sort_key_value)
-        resp = self.table.get_item(KeyConditionExpression=filtering_exp)
-        print(resp)
+        return [self.type(**item) for item in resp['Items']]
 
     def _put_item(self, data):
         resp = self.table.put_item(
@@ -78,17 +79,15 @@ class Table(object):
 
         return keys
 
-    def get(self, partition_key_value=None, sort_key_value=None):
+    def get(self, partition_key_value=None, sort_key_value=None, return_type=None):
         if sort_key_value:
             assert partition_key_value
             # return self._get_item(partition_key_value=partition_key_value, sort_key_value=sort_key_value)
-            resp = self._query_table(partition_key_value=partition_key_value, sort_key_value=sort_key_value)
-            return resp[0] if resp else None
+            return self._query_table(partition_key_value=partition_key_value, sort_key_value=sort_key_value)
         elif partition_key_value:
-            resp = self._query_table(partition_key_value=partition_key_value)
-            return resp
+            return self._query_table(partition_key_value=partition_key_value)
         else:
-            return self.table.scan()['Items']
+            return self._scan_table()
 
     def insert(self, obj):
         if hasattr(obj, "serialize"):

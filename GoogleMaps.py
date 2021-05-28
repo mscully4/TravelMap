@@ -11,9 +11,7 @@ class GoogleMaps(object):
         Arguments:
             text <str>: A city name
         '''
-        res = self.gm.places_autocomplete(text, types=['(cities)'])
-        self.suggestions = res 
-        return res 
+        return self.gm.places_autocomplete(text, types=['(cities)'])
 
     def get_place_suggestions(self, text, location=None, radius=25000):
         '''
@@ -22,7 +20,7 @@ class GoogleMaps(object):
         Arguments:
             text <str>: A place name
             location <list>: A list of lat, long coordinates
-            radius <str>: The radius from location to focus the search on 
+            radius <str>: The radius (in meters) from location to focus the search on
         '''
         res = self.gm.places_autocomplete(text, location=location, radius=radius)
         return res        
@@ -54,7 +52,7 @@ class GoogleMaps(object):
         }
         return data
 
-    def geocode_place(self, ac):
+    def geocode_place(self, place_id):
         '''
         A method for retrieving information about a place given its place_id
 
@@ -64,7 +62,7 @@ class GoogleMaps(object):
         Returns:
             <dict>: A dictionary containing information about a place (address, city, country, coordinates, etc)
         '''
-        s = self.gm.reverse_geocode(ac['place_id'])[0]
+        s = self.gm.reverse_geocode(place_id)[0]
 
         country, zip_code, street, street_number, state, city = '', '', '', '', '', ''
         for comp in s['address_components']:
@@ -82,10 +80,9 @@ class GoogleMaps(object):
                 state = comp['long_name']
 
         return {
-            'name': ac['structured_formatting']['main_text'],
-            'place_id': ac['place_id'],
+            'place_id': s['place_id'],
             'address': street + " " + street_number,
-            'city': city,
+            # 'city': city,
             'state': state,
             'country': country,
             'zip_code': zip_code,
