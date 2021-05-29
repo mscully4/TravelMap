@@ -21,6 +21,8 @@ from pyfiglet import Figlet
 
 import utils
 
+APP_NAME = 'Travel Map CLI'
+
 class TravelMapCLI(object):
     def __init__(self):
         self.gp = None
@@ -35,12 +37,14 @@ class TravelMapCLI(object):
         self._run = False
 
     def set_gp(self, gp):
+        assert isinstance(gp, GooglePhotos)
         self.gp = gp
 
     def set_gm(self, gm):
         self.gm = gm
 
     def set_s3(self, s3):
+        assert isinstance(s3, S3)
         self.s3 = s3
 
     def set_dynamo(self, dynamo):
@@ -76,77 +80,125 @@ class TravelMapCLI(object):
             sort_key=TABLE_KEYS.PHOTOS.SORT_KEY
         )
 
-    def run(self):
+    async def run(self):
         self._run = True
 
         while (self._run):
-            self._print_menu()
-            sel = self._get_selection(0, 9)
+            CLI.print_menu()
+            sel = CLI.get_selection(0, 9)
 
             if sel == 0:
                 self._run = False
+                if not self.gp.done:
+                    self.gp.albums.cancel()
             elif sel == 1:
                 self.add_destination()
             elif sel == 2:
                 self.add_place()
+            elif sel == 3:
+                await self.add_album()
+            elif sel == 4:
+                self.edit_destination()
+            elif sel == 5:
+                self.edit_place()
+            elif sel == 6:
+                self.delete_destination()
+            elif sel == 7:
+                self.delete_place()
+            elif sel == 8:
+                self.add_photos()
+            elif sel == 9:
+                self.add_cover_photo()
+
+    def _select_destination(self):
+        destinations = self.destinations_table.get()
+        CLI.print_double_list(destinations)
+        sel = CLI.get_selection(0, len(destinations)) - 1
+        CLI.print_figlet(APP_NAME)
+        return destinations[sel]
+
+    def _select_place(self, destination):
+        places = self.places_table.get(partition_key_value=destination.destination_id)
+        CLI.print_double_list(places)
+        sel = CLI.get_selection(0, len(places)) - 1
+        CLI.print_figlet(APP_NAME)
+        return places[sel] if isinstance(sel, int) else sel
+
     
-    def _print_menu(self):
-        # utils.cls()
-        print(Figlet(font='slant').renderText("Travel Map"))
-        print('Main Menu')
+    def _upload_photos(self, destination_id, place_id):
+        album = self.albums_table.get(partition_key_value=destination_id, sort_key_value=place_id)[0]
+        photos = self.gp.get_album_photos(album.album_id)
+        if photos:
+            downloaded_photos = []
+            for i, obj in enumerate(photos):
+                print(f"{i} out of {len(photos)} photos uploaded")
+                photo = Photo(destination_id=destination_id, place_id=place_id, **obj)
+                photo.download(obj.get('baseUrl'))
+                photo.write(self.s3)
+                downloaded_photos.append(photo.serialize())
+                utils.clr_line()
 
-        print('0. To Exit')
-        print('1. Enter a new destination')
-        print('2. Enter a new place')
-        print('3. Add an album to a place')
-        print('4. Edit a destination')
-        print('5. Edit a place')
-        print('6. Delete a destination')
-        print('7. Delete a place')
-        print('8. Upload Photos')
-        print('9. Upload Album Cover')
+            self.photos_table.insert({
+                TABLE_KEYS.PHOTOS.PARTITION_KEY: destination_id,
+                TABLE_KEYS.PHOTOS.SORT_KEY: place_id,
+                "photos": downloaded_photos
+            })
 
-        print()
-
-    def _get_selection(self, minimum, maximum):
-        selection = input('Selection: ')
-
-        selection = utils.try_cast(selection, int) 
-        assert selection != None
-        assert minimum <= selection <= maximum
-
-        return selection
+    def _upload_cover_photo(self, album):
+        cover_photo = Photo(photo_id=album.cover_photo_id, place_id=album.place_id, destination_id=album.destination_id)
+        cover_photo.download(url=album.cover_photo_download_url, is_cover_image=True)
+        album.cover_photo_src = cover_photo.write(self.s3)
+        self.albums_table.insert(album)
 
     def add_destination(self):
+        CLI.print_figlet(APP_NAME)
+
         #Add Destination
         inp = CLI.get_input('Enter destination name to use the autocomplete functionality.')
         if inp == '\\':
             utils.cls()
             return
 
-        suggestions = gm.get_destination_suggestions(inp)
-        CLI.print_single_list([suggestion['description'] for suggestion in suggestions])
-        sel = CLI._get_selection(0, len(suggestions)) - 1
+        suggestions = self.gm.get_destination_suggestions(inp)
+        if suggestions:
+            CLI.print_figlet(APP_NAME)
+            CLI.print_single_list([suggestion['description'] for suggestion in suggestions])
+            sel = CLI.get_selection(0, len(suggestions)) - 1
 
-        if sel == -1:
-            self.add_destination()
-            return
+            if sel == -1:
+                self.add_destination()
+                return
 
-        data = self.gm.geocode_destination(suggestions[sel]['place_id'])
+            id_ = suggestions[sel]['place_id']
+        
+        else:
+            CLI.print_figlet(APP_NAME)
+
+            print('City could not be found :(')
+            print('Enter in the Place ID below (https://developers.google.com/maps/documentation/javascript/place-id)', '\n')
+
+            id_ = input('Place ID: ')
+            if inp == '\\':
+                utils.cls() 
+                return 0
+        
+        data = self.gm.geocode_destination(id_)
         destination = Destination(**data)
 
         if destination.destination_id not in self.destinations_table.get_keys():
             self.destinations_table.insert(destination)
 
+
     def add_place(self, destination=None):
+        CLI.print_figlet(APP_NAME)
+
         #Add Place to Destinations
         if not destination:
-            destinations = self.destinations_table.get()
-            CLI._print_double_list(destinations)
-            sel = CLI._get_selection(0, len(destinations)) - 1
-            destination = destinations[sel]
+            destination = self._select_destination()
 
+        CLI.print_figlet(APP_NAME)
         print('Selected Destination: {}'.format(destination.name))
+        print()
         inp = CLI.get_input('Enter a place name to use the autocomplete functionality.')
         if inp == '\\':
             utils.cls()
@@ -157,7 +209,7 @@ class TravelMapCLI(object):
         CLI.print_single_list(
             [f"{sug['structured_formatting'].get('main_text', '')} {sug['structured_formatting'].get('secondary_text', '')}" for sug in suggestions]
         )
-        sel = CLI._get_selection(0, len(suggestions)) - 1
+        sel = CLI.get_selection(0, len(suggestions)) - 1
 
         if sel == -1:
             self.add_place(destination=destination)
@@ -168,13 +220,120 @@ class TravelMapCLI(object):
         if place.place_id not in self.places_table.get_keys():
             self.places_table.insert(place)
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config-file', required=True, type=str, help="The path to the config file")
-    parser.add_argument('-p', '--google-photos-secret', required=True, type=str, help="The path to the Google Photos Secret file")
+    async def add_album(self, destination=None):
+        #Add Album to Place
+        # assert isinstance(destination, (None, Destination))
+        if not destination:
+            destination = self._select_destination()
 
-    args = vars(parser.parse_args())
+        place = self._select_place(destination)
 
+        try:
+            album = self.albums_table.get(partition_key_value=destination.destination_id, sort_key_value=place.place_id)[0]
+        except:
+            album = None
+
+        if not album or CLI.ask_yes_no_question("An album already exists for this place.  Overwrite? (y/n): "):
+            inp = CLI.get_input('Enter the album name to use the autocomplete functionality.', f"{destination.name} -- {place.name}")
+
+            if inp == '\\':
+                utils.cls()
+                return
+
+            if not self.gp.done:
+                await self.gp.albums
+            
+            suggestions = self.gp.get_album_suggestions(self.gp.albums.result(), inp, 5)
+            # There should just be a function called print_suggestion_list
+            CLI.print_single_list([sug[0] for sug in suggestions])
+            sel = CLI.get_selection(0, len(suggestions)) - 1
+            data = self.gp.get_album_info(suggestions[sel][1])
+            album = Album(destination_id=destination.destination_id, place_id=place.place_id, **data)
+            self._upload_cover_photo(album)
+            self.albums_table.insert(album)
+
+        # if CLI.ask_yes_no_question("Would you like to upload photos? (y/n): "):
+        #     photos = gp.get_album_photos(album.album_id)
+        #     upload_photos(photos, photos_table, album.album_id, destination.destination_id, place.place_id)
+
+    def edit_destination(self, destination=None):
+        CLI.print_figlet(APP_NAME)
+        if not destination:
+            destination = self._select_destination()
+
+        destination = CLI.edit_obj(destination)
+        self.destinations_table.update(destination)
+
+    def edit_place(self, destination=None, place=None):
+        CLI.print_figlet(APP_NAME)
+        if not destination:
+            destination = self._select_destination()
+
+        if not place:
+            place = self._select_place(destination)
+
+        place = CLI.edit_obj(place)
+        self.places_table.update(place)
+
+    def delete_destination(self):
+        CLI.print_figlet(APP_NAME)
+        destination = self._select_destination()
+        self.destinations_table.delete(destination)
+
+    def delete_place(self):
+        CLI.print_figlet(APP_NAME)
+        destination = self._select_destination()
+        place = self._select_place(destination)
+        self.places_table.delete(place)
+
+    def add_photos(self, destination=None, place=None):
+        CLI.print_figlet(APP_NAME)
+        if not destination:
+            destination = self._select_destination()
+
+        if not place:
+            #Don't use self._select_place to prevent having to do another call to get all places later
+            places = self.places_table.get(partition_key_value=destination.destination_id)
+            CLI.print_double_list(places)
+            sel = CLI.get_selection(0, len(places))
+            place = places[sel - 1] if isinstance(sel, int) else sel
+
+        if sel == "*":
+            for place in places:
+                print(f"Downloading Photos of {place.name}")
+                self._upload_photos(destination.destination_id, place.place_id)
+        else:
+            self._upload_photos(destination.destination_id, place.place_id)
+
+    def add_cover_photo(self, destination=None):
+        '''
+        This needs to be updated to pull a fresh download url
+        '''
+        assert destination == None or isinstance(destination, Destination)
+        CLI.print_figlet(APP_NAME)
+
+        if not destination:
+            destination = self._select_destination()
+
+        place = self._select_place(destination)
+        
+        if place == "*":
+            albums = self.albums_table.get(partition_key_value=destination.destination_id)
+            for i, album in enumerate(albums):
+                print(f"{i} out of {len(albums)} cover photos uploaded")
+                data = self.gp.get_album_info(album.album_id)
+                album.cover_photo_download_url = data.get('coverPhotoBaseUrl', "")
+                self._upload_cover_photo(album)
+                self.albums_table.insert(album)
+        else:
+            album = self.albums_table.get(partition_key_value=destination.destination_id, sort_key_value=place.place_id)[0]
+            data = self.gp.get_album_info(album.album_id)
+            album.cover_photo_download_url = data.get('coverPhotoBaseUrl', "")
+            self._upload_cover_photo(album)
+            self.albums_table.insert(album)
+
+
+async def main(args):
     # Retrieving keys from config file
     assert os.path.exists(args['config_file'])
     config = cp.ConfigParser()
@@ -184,7 +343,7 @@ if __name__ == '__main__':
     GOOGLE_PHOTOS_SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
     assert os.path.isfile(args['google_photos_secret'])
     gp = GooglePhotos(args['google_photos_secret'], GOOGLE_PHOTOS_SCOPES)
-    
+
     #Instantiating Google Maps class
     assert config['GOOGLE'].get('API_KEY', False)
     gm = GoogleMaps(api_key=config['GOOGLE'].get('API_KEY'))
@@ -198,7 +357,41 @@ if __name__ == '__main__':
     cli.set_gp(gp)
     cli.set_s3(s3)
     cli.set_dynamo(db)
-    cli.run()
+    await cli.run()
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config-file', required=True, type=str, help="The path to the config file")
+    parser.add_argument('-p', '--google-photos-secret', required=True, type=str, help="The path to the Google Photos Secret file")
+
+    args = vars(parser.parse_args())
+    asyncio.get_event_loop().run_until_complete(main(args))
+
+    # # Retrieving keys from config file
+    # assert os.path.exists(args['config_file'])
+    # config = cp.ConfigParser()
+    # config.read(args['config_file'])
+
+    # #Instantiating Google Photos class
+    # GOOGLE_PHOTOS_SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
+    # assert os.path.isfile(args['google_photos_secret'])
+    # gp = GooglePhotos(args['google_photos_secret'], GOOGLE_PHOTOS_SCOPES)
+    
+    # #Instantiating Google Maps class
+    # assert config['GOOGLE'].get('API_KEY', False)
+    # gm = GoogleMaps(api_key=config['GOOGLE'].get('API_KEY'))
+
+    # s3 = S3(config['S3'].get('BUCKET'), config['S3'].get('REGION'))
+
+    # db = create_dynamo_resource()
+
+    # cli = TravelMapCLI()
+    # cli.set_gm(gm)
+    # cli.set_gp(gp)
+    # cli.set_s3(s3)
+    # cli.set_dynamo(db)
+    # asyncio.get_event_loop().run_until_complete(cli.run())
+
 #     asyncio.get_event_loop().run_until_complete(main(args))
 
 # def add_destination(destinations_table, gm):
@@ -292,7 +485,7 @@ if __name__ == '__main__':
 #         #If there is no action selected
 #         if not state[1]:
 #             utils.cls()
-#             print(Figlet(font='slant').renderText("Travel Map"))
+#             print(Figlet(font='slant').renderText(APP_NAME))
 #             print('Main Menu')
 
 #             print('0. To Exit')

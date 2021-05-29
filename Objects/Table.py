@@ -48,10 +48,10 @@ class Table(object):
 
     def _delete_item(self, data):
         key = {
-            self.partition_key: data.__dict__[self.partition_key]
+            self.partition_key: data[self.partition_key]
         }
         if self.sort_key:
-            key[self.sort_key] = data.__dict__[self.sort_key]
+            key[self.sort_key] = data[self.sort_key]
 
         resp = self.table.delete_item(
             Key=key
@@ -101,7 +101,7 @@ class Table(object):
     
     def delete(self, obj):
         if hasattr(obj, "serialize"):
-            self._delete_item(obj.serializa())
+            self._delete_item(obj.serialize())
 
 # if __name__ == "__main__":
 #     from DynamoDB import create_dynamo_resource, create_dynamo_table_client

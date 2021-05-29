@@ -8,18 +8,17 @@ from google.auth.transport.requests import Request
 from fuzzywuzzy import fuzz
 import asyncio
 
+API_SERVICE_NAME = 'photoslibrary'
+API_VERSION = 'v1'
 
 class GooglePhotos(object):
     def __init__(self, client_secret_file, scopes):
-        self.service = self.Create_Service(client_secret_file, 'photoslibrary', 'v1', scopes)
+        self.service = self.create_service(client_secret_file, scopes)
         self.albums = asyncio.get_event_loop().create_task(self.get_albums())
         self.done = None
 
 
-    def Create_Service(self, client_secret_file, api_name, api_version, *scopes):
-        API_SERVICE_NAME = api_name
-        API_VERSION = api_version
-
+    def create_service(self, client_secret_file, *scopes):
         cred = None
 
         pickle_file = f'token_{API_SERVICE_NAME}_{API_VERSION}.pickle'
