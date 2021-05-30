@@ -2,12 +2,6 @@ import pprint
 from decimal import Decimal
 
 class Album(object):
-    '''
-    This helper class provides property access (the "dot notation")
-    to the json object, backed by the original object stored in the _raw
-    field.
-    '''
-
     def __init__(self, destination_id, place_id, album_id=None, cover_photo_id=None, title=None, **kwargs):
         self.destination_id = destination_id
         self.place_id = place_id

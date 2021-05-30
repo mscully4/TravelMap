@@ -1,13 +1,7 @@
 import pprint
 from decimal import Decimal
-from DynamoDB import _put_item, _delete_item
 
 class Place(object):
-    '''This helper class provides property access (the "dot notation")
-    to the json object, backed by the original object stored in the _raw
-    field.
-    '''
-
     def __init__(self, name, address, state, country, zip_code, latitude, longitude, place_id, destination_id, city=None, **kwargs):
         self.place_id = place_id
         self.name = name
@@ -41,17 +35,6 @@ class Place(object):
     # def city(self, city):
     #     if isinstance(city, str):
     #         self._city = city
-    def insert(self, table):
-        _put_item(table, self.serialize())
-
-    def update(self, table):
-        _put_item(table, self.serialize())
-    
-    def delete(self, table):
-        key = {
-            "place_id": self.place_id
-        }
-        _delete_item(table, key)
 
     def serialize(self):
         return {

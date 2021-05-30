@@ -1,15 +1,15 @@
-import utils as u
+from utils import utils
 import math
 from pyfiglet import Figlet
 
 def print_figlet(text):
-    u.cls()
+    utils.cls()
     print(Figlet(font='slant').renderText(text))
 
-def print_menu():
-    u.cls()
+def print_menu(app_name):
+    utils.cls()
 
-    print_figlet("Travel Map")
+    print_figlet(app_name)
     print('Main Menu')
 
     print('0. To Exit')
@@ -47,7 +47,7 @@ def get_selection(minimum, maximum):
     if selection in "*\\":
         return selection
 
-    selection = u.try_cast(selection, int) 
+    selection = utils.try_cast(selection, int) 
     assert selection != None
     assert minimum <= selection <= maximum
 
@@ -56,7 +56,7 @@ def get_selection(minimum, maximum):
 def get_input(msg, default=None):
     print(msg)
     if default:
-        return u.rlinput("Input: ", default)
+        return utils.rlinput("Input: ", default)
 
     return input('Input: ')
 
@@ -76,9 +76,9 @@ def edit_obj(obj):
     """
 
     for k, v in obj.__dict__.items():
-        inp = u.rlinput('{}: '.format(k), str(v))
+        inp = utils.rlinput('{}: '.format(k), str(v))
         
-        inp_as_float = u.try_cast(inp, float)        
+        inp_as_float = utils.try_cast(inp, float)        
         if inp_as_float != None:
             #If the input is a number, save it as a float or int
             obj.__dict__[k] = inp_as_float if '.' in inp else int(inp) 

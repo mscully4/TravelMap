@@ -1,14 +1,7 @@
 import pprint
 from decimal import Decimal
-from DynamoDB import _put_item, _delete_item
 
 class Destination(object):
-    '''
-    This helper class provides property access (the "dot notation")
-    to the json object, backed by the original object stored in the _raw
-    field.
-    '''
-
     def __init__(self, country, country_code, latitude, longitude, destination_id=None, name=None, **kwargs):
         self.destination_id = destination_id if destination_id else kwargs.get("place_id")
         self.name = name
@@ -16,6 +9,7 @@ class Destination(object):
         self.country_code = country_code
         self.latitude = latitude
         self.longitude = longitude
+        self.type = kwargs.get('type', '')
 
     def __repr__(self):
         return '{name}({raw})'.format(
@@ -39,5 +33,6 @@ class Destination(object):
             "country": self.country,
             "country_code": self.country_code,
             "latitude": Decimal(str(self.latitude)),
-            "longitude": Decimal(str(self.longitude))
+            "longitude": Decimal(str(self.longitude)),
+            "type": self.type
         }

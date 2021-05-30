@@ -1,7 +1,6 @@
 import pprint
 from decimal import Decimal
 from PIL import Image
-from DynamoDB import _put_item
 import requests
 import io
 import hashlib as hl
@@ -86,11 +85,8 @@ class Photo:
             "photo_id": self.photo_id,
             "src": self._s3_url,
             "type": self.mimeType,
-            "height": self.height,
-            "width": self.width,
+            "height": Decimal(self.height),
+            "width": Decimal(self.width),
             "creation_timestamp": self.creation_timestamp,
             "destination_id": self.destination_id
         }
-
-    def insert(self, table):
-        _put_item(table, self.serialize())
